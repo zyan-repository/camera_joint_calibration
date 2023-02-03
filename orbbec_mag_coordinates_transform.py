@@ -57,13 +57,10 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
     else:
         if isinstance(depth_data, str):
             depth_data = pickle.load(open(depth_data, 'rb'))
-        inv_K1 = np.linalg.inv(K1)
-        inv_R1 = np.linalg.inv(R1)
-        sub = inv_R1.dot(T1)
         Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
         pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(3, 1))).T
         # pixel coordinate to world coordinate
-        obj_points = (Zc * inv_R1.dot(inv_K1.dot(pixel_matrix)) - sub).T
+        obj_points = (Zc * np.linalg.inv(R1).dot(np.linalg.inv(K1).dot(pixel_matrix)) - np.linalg.inv(R1).dot(T1)).T
     image_points, _ = cv2.projectPoints(obj_points, rvec2, T2, K2, D2)
     return np.around(image_points.squeeze(), 0).astype(np.int64)
 
