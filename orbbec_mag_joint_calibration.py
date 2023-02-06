@@ -88,7 +88,6 @@ def joint_calibration(sample_dir, checker_board, square_size, lib_path):
     :param checker_board: 棋盘格内角点数，格式为元组
     :param square_size: 棋盘方格真实长宽，格式为元组，单位毫米
     :param lib_path: 奥比中光openni sdk路径,路径到/sdk/libs
-    :param depth_dir: 深度数据文件夹路径,里面有所有采集的奥比中光深度数据文件
     :return: 奥比中光: 内参矩阵K1，畸变系数D1，旋转向量rvec1，旋转矩阵R1，平移向量T1 巨哥科技: 内参矩阵K2，畸变系数D2，旋转向量rvec2，旋转矩阵R2，平移向量T2
     """
     orbbec_img_dir_lst = glob.glob(os.path.join(sample_dir, "*orbbec_rgb.jpg"))
