@@ -138,6 +138,8 @@ def read_orbbec_mag(lib_path, mag_ip, save_dir):
                 cv2.circle(rendered_orbbec_rgb, (x, y), 5, (0, 0, 255), -1)
             mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw)
         except Exception as e:
+            print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
+            print(e)
             pass
         color_uint8 = frame
         ir_img = infrared.get_frame(0.1)
@@ -155,11 +157,14 @@ def read_orbbec_mag(lib_path, mag_ip, save_dir):
                     x, y = corner.ravel()
                     cv2.circle(rendered_mag_rgb, (x, y), 5, (0, 0, 255), -1)
             except Exception as e:
+                print("巨哥科技rgb寻找角点，绘制到巨哥科技rgb失败。")
+                print(e)
                 pass
             for point in mag_pixel_coordinates:
                 try:
                     cv2.circle(rendered_mag_rgb, np.around(point, 0).astype(np.int64), 5, (0, 255, 0), -1)
                 except Exception as e:
+                    print("通过奥比中光转换出的角点坐标，在巨哥科技rgb上绘制失败。")
                     print(e)
                     pass
             vis_img_reize = cv2.resize(rendered_mag_rgb, (640, 480))
@@ -245,7 +250,4 @@ def read_orbbec_mag(lib_path, mag_ip, save_dir):
 
 
 if __name__ == "__main__":
-    try:
-        read_orbbec_mag(r"C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs", "10.100.24.139", r"C:\Users\38698\work_space\data\hand_camera")
-    except Exception as e:
-        pass
+    read_orbbec_mag(r"C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs", "10.100.24.139", r"C:\Users\38698\work_space\data\hand_camera")

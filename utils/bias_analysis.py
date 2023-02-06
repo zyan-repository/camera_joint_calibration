@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-from orbbec_mag_joint_calibration import orbbec_to_mag, load_joint_parameter, find_chessboard_corners
+from orbbec_mag_coordinates_transform import orbbec_to_mag, load_joint_parameter
+from orbbec_mag_joint_calibration import find_chessboard_corners
 
 
 K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter("../joint_parameter")
@@ -31,7 +32,6 @@ tran_points = []
 for corner in corners:
     x, y = corner.ravel()
     tran_points.append((x, y))
-mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points,
-                                      r"C:\Users\38698\work_space\data\hand_camera\1675135288_pig_0_0_xw_white_small_stand\0_0_xw_white_small_stand_120_orbbec_depth.pkl", verbose=True)
+mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, r"C:\Users\38698\work_space\data\hand_camera\1675135288_pig_0_0_xw_white_small_stand\0_0_xw_white_small_stand_120_orbbec_depth.pkl")
 
 print(mag_pixel_coordinates)

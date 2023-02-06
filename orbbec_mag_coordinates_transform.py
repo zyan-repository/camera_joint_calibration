@@ -33,7 +33,6 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
     :param depth_file: 奥比中光深度相机rgb图对应的深度pickle文件，字符串或数组
     :param use_sdk: 是否使用奥比中光sdk，偏差较大，默认为False
     :param lib_path: 奥比中光openni sdk路径,路径到/sdk/libs
-    :param verbose: 是否输出额外信息
     :return: 巨哥科技测温相机rgb图中对应的像素坐标
     """
     orbbec_pixel_coordinates = np.asarray(orbbec_pixel_coordinates)
