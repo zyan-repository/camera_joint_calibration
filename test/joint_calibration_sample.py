@@ -185,6 +185,7 @@ def read_orbbec_mag(lib_path, mag_ip, save_dir):
                     cv2.imwrite("%s/%s_%s_orbbec_rgb.jpg" % (pig_dir_name, detail, n), color_uint8)
                     cv2.imwrite("%s/%s_%s_orbbec_depth.jpg" % (pig_dir_name, detail, n), depth_uint8)
                     pickle.dump(depth_raw, open("%s/%s_%s_orbbec_depth.pkl" % (pig_dir_name, detail, n), 'wb'))
+                    cv2.imwrite("%s/%s_%s_orbbec_rendered_rgb.jpg" % (pig_dir_name, detail, n), rendered_orbbec_rgb)
 
                     if ir_img is not None:
                         ir_outdir1 = "%s/%s_%s_MAG_ir_vis.jpg" % (pig_dir_name, detail, n)
@@ -193,6 +194,7 @@ def read_orbbec_mag(lib_path, mag_ip, save_dir):
                         cv2.imwrite(ir_outdir1, ir_img)
                     if vis_img is not None:
                         cv2.imwrite("%s/%s_%s_MAG_rgb.jpg" % (pig_dir_name, detail, n), vis_img)
+                        cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (pig_dir_name, detail, n), rendered_mag_rgb)
                 if cv2.waitKey(1) == ord('q'):
                     # 关闭窗口 和 相机
                     depth_stream.stop()
