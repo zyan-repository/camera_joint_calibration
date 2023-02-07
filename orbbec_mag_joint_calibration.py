@@ -79,19 +79,19 @@ def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib
     return obj_points, corner_success
 
 
-def joint_calibration(sample_dir, checker_board, square_size, lib_path):
+def joint_calibration(checker_board, square_size, sample_path, lib_path):
     """
     寻找标定板交点，在此基础上寻找亚像素焦点优化。
-    :param sample_dir: 采集数据保存地址，采集数据可用test/joint_calibration_test.py脚本，
-                       尽量选择其中角点检测成功且清晰的数据提高标定质量（不筛选也行，但可能影响结果精度），
-                       名字带rendered画出了角点，红色是检测的，绿色是根据默认参数匹配的，标定后参数会自动更新
     :param checker_board: 棋盘格内角点数，格式为元组
     :param square_size: 棋盘方格真实长宽，格式为元组，单位毫米
+    :param sample_path: 采集数据保存地址，采集数据可用test/joint_calibration_test.py脚本，
+                       尽量选择其中角点检测成功且清晰的数据提高标定质量（不筛选也行，但可能影响结果精度），
+                       名字带rendered画出了角点，红色是检测的，绿色是根据默认参数匹配的，标定后参数会自动更新
     :param lib_path: 奥比中光openni sdk路径,路径到/sdk/libs
     :return: 奥比中光: 内参矩阵K1，畸变系数D1，旋转向量rvec1，旋转矩阵R1，平移向量T1 巨哥科技: 内参矩阵K2，畸变系数D2，旋转向量rvec2，旋转矩阵R2，平移向量T2
     """
-    orbbec_img_dir_lst = glob.glob(os.path.join(sample_dir, "*orbbec_rgb.jpg"))
-    mag_img_dir_lst = glob.glob(os.path.join(sample_dir, "*MAG_rgb.jpg"))
+    orbbec_img_dir_lst = glob.glob(os.path.join(sample_path, "*orbbec_rgb.jpg"))
+    mag_img_dir_lst = glob.glob(os.path.join(sample_path, "*MAG_rgb.jpg"))
     # calibrate orbbec
     orbbec_img_list = []
     for img_dir in orbbec_img_dir_lst:
@@ -139,7 +139,7 @@ def joint_calibration(sample_dir, checker_board, square_size, lib_path):
 
 if __name__ == '__main__':
     # calibration
-    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = joint_calibration(r"C:\Users\38698\work_space\data\hand_camera\1675415054_pig_123456789_0_0_xw_white_small_stand", (6, 9), (28, 28), r"C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs")
+    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = joint_calibration((6, 9), (28, 28), r"C:\Users\38698\work_space\data\hand_camera\1675415054_pig_123456789_0_0_xw_white_small_stand",  r"C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs")
 
     K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter("joint_parameter")
 
