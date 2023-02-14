@@ -1,4 +1,7 @@
 import os
+import sys
+PROJECT_ABSOLUTE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_ABSOLUTE_PATH)
 import pickle
 import cv2
 import numpy as np
@@ -57,7 +60,7 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
         if isinstance(depth_data, str):
             depth_data = pickle.load(open(depth_data, 'rb'))
         Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
-        pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(3, 1))).T
+        pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1))).T
         # pixel coordinate to world coordinate
         obj_points = (Zc * np.linalg.inv(R1).dot(np.linalg.inv(K1).dot(pixel_matrix)) - np.linalg.inv(R1).dot(T1)).T
     image_points, _ = cv2.projectPoints(obj_points, rvec2, T2, K2, D2)
@@ -65,9 +68,9 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
 
 
 if __name__ == '__main__':
-    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter("./joint_parameter")
+    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
 
-    depth_data = r"C:\Users\38698\work_space\data\hand_camera\1675135288_pig_0_0_xw_white_small_stand\0_0_xw_white_small_stand_120_orbbec_depth.pkl"
+    depth_data = r"D:\data\hand_camera\1675417160_pig_123456789_0_0_xw_white_small_stand\123456789_0_0_xw_white_small_stand_25_orbbec_depth.pkl"
     depth_data = pickle.load(open(depth_data, 'rb'))
-    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(301, 260), (366, 405), (327, 294)], depth_data)
+    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(301, 260), (366, 405), (327, 294), (100, 100)], depth_data)
     print(mag_pixel_coordinate)

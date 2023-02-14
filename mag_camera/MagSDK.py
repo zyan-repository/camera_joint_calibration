@@ -1,5 +1,8 @@
 ﻿import platform
 import os
+import sys
+PROJECT_ABSOLUTE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_ABSOLUTE_PATH)
 import ctypes
 from ctypes import *
 from enum import Enum
@@ -9,14 +12,14 @@ IS_UNIX = os.name == 'posix'
 
 if IS_WINDOWS:
 	from ctypes.wintypes import HWND
-	extlib = "../mag_camera/ThermoGroupSDKLib.dll"
-	vis_lib_name = "../mag_camera/MagVisible.dll"
+	extlib = os.path.join(PROJECT_ABSOLUTE_PATH, "mag_camera/ThermoGroupSDKLib.dll")
+	vis_lib_name = os.path.join(PROJECT_ABSOLUTE_PATH, "mag_camera/MagVisible.dll")
 else: 
 	HWND = ctypes.c_void_p
 	WINFUNCTYPE = CFUNCTYPE
 	windll = cdll
-	extlib = "../mag_camera/libthermogroupsdk.so"
-	vis_lib_name = "../mag_camera/libmagvisible.so"
+	extlib = os.path.join(PROJECT_ABSOLUTE_PATH, "mag_camera/libthermogroupsdk.so")
+	vis_lib_name = os.path.join(PROJECT_ABSOLUTE_PATH, "mag_camera/libmagvisible.so")
 
 # Constants
 CAMNAME_PROTOCOLLEN = 32

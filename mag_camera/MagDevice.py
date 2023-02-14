@@ -1,4 +1,8 @@
-﻿import mag_camera.MagSDK as MagSDK
+﻿import os
+import sys
+PROJECT_ABSOLUTE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_ABSOLUTE_PATH)
+import mag_camera.MagSDK as MagSDK
 import ctypes
 import socket
 import struct
