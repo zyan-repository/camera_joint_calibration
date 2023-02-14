@@ -32,7 +32,7 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
     :param D2: 巨哥科技测温相机畸变系数
     :param rvec2: 巨哥科技测温相机旋转向量
     :param T2: 巨哥科技测温相机平移向量
-    :param orbbec_pixel_coordinates: 奥比中光深度相机rgb图上像素坐标
+    :param orbbec_pixel_coordinates: 奥比中光深度相机rgb图上像素坐标 shape(n, 2)
     :param depth_file: 奥比中光深度相机rgb图对应的深度pickle文件，字符串或数组
     :param use_sdk: 是否使用奥比中光sdk，偏差较大，默认为False
     :param lib_path: 奥比中光openni sdk路径,路径到/sdk/libs
