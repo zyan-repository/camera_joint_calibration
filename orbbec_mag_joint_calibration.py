@@ -1,4 +1,8 @@
 import os
+import sys
+PROJECT_ABSOLUTE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_ABSOLUTE_PATH)
+import argparse
 import glob
 import cv2
 import numpy as np
@@ -79,17 +83,32 @@ def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib
     return obj_points, corner_success
 
 
-def joint_calibration(checker_board, square_size, sample_path, lib_path):
+def joint_calibration():
     """
     寻找标定板交点，在此基础上寻找亚像素焦点优化。
-    :param checker_board: 棋盘格内角点数，格式为元组
-    :param square_size: 棋盘方格真实长宽，格式为元组，单位毫米
-    :param sample_path: 采集数据保存地址，采集数据可用test/joint_calibration_test.py脚本，
-                       尽量选择其中角点检测成功且清晰的数据提高标定质量（不筛选也行，但可能影响结果精度），
-                       名字带rendered画出了角点，红色是检测的，绿色是根据默认参数匹配的，标定后参数会自动更新
-    :param lib_path: 奥比中光openni sdk路径,路径到/sdk/libs
     :return: 奥比中光: 内参矩阵K1，畸变系数D1，旋转向量rvec1，旋转矩阵R1，平移向量T1 巨哥科技: 内参矩阵K2，畸变系数D2，旋转向量rvec2，旋转矩阵R2，平移向量T2
     """
+    def parse_args():
+        """
+        :param checker_board: 棋盘格内角点数，格式为元组
+        :param square_size: 棋盘方格真实长宽，格式为元组，单位毫米
+        :param sample_path: 采集数据保存地址，采集数据可用sample/joint_calibration_sample.py脚本，
+                            尽量选择其中角点检测成功且清晰的数据提高标定质量（不筛选也行，但可能影响结果精度），
+                            名字带rendered画出了角点，红色是检测的，绿色是根据默认参数匹配的，标定后参数会自动更新
+        :param lib_path: 奥比中光openni sdk路径,路径到/sdk/libs
+        """
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--checker_board', nargs='+', type=int, help='checker board size')
+        parser.add_argument('--square_size', nargs='+', type=int, help='checker board square real size')
+        parser.add_argument('--lib_path', type=str, help='orbbec sdk lib path')
+        parser.add_argument('--sample_path', type=str, default=os.path.join(PROJECT_ABSOLUTE_PATH, "sample"), help='sampling data saved dir')
+        return parser.parse_args()
+
+    args = parse_args()
+    checker_board = tuple(args.checker_board)
+    square_size = tuple(args.square_size)
+    sample_path = args.sample_path
+    lib_path = args.lib_path
     orbbec_img_dir_lst = glob.glob(os.path.join(sample_path, "*orbbec_rgb.jpg"))
     mag_img_dir_lst = glob.glob(os.path.join(sample_path, "*MAG_rgb.jpg"))
     # calibrate orbbec
@@ -119,29 +138,28 @@ def joint_calibration(checker_board, square_size, sample_path, lib_path):
             img.append(cv2.imread(img_dir))
 
     ret, rvec2, R2, T2 = cal_outside_image_monocular(obj_points, img, checker_board, K2, D2)
-
-    if not os.path.exists("./joint_parameter"):
-        os.makedirs("./joint_parameter")
-    np.save('./joint_parameter/K1.npy', K1)
-    np.save('./joint_parameter/D1.npy', D1)
-    np.save('./joint_parameter/rvec1.npy', rvec1)
-    np.save('./joint_parameter/R1.npy', R1)
-    np.save('./joint_parameter/T1.npy', T1)
-
-    np.save('./joint_parameter/K2.npy', K2)
-    np.save('./joint_parameter/D2.npy', D2)
-    np.save('./joint_parameter/rvec2.npy', rvec2)
-    np.save('./joint_parameter/R2.npy', R2)
-    np.save('./joint_parameter/T2.npy', T2)
+    if not os.path.exists(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter")):
+        os.makedirs(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/K1.npy"), K1)
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/D1.npy"), D1)
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/rvec1.npy"), rvec1)
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/R1.npy"), R1)
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/T1.npy"), T1)
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/K2.npy"), K2)
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/D2.npy"), D2)
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/rvec2.npy"), rvec2)
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/R2.npy"), R2)
+    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/T2.npy"), T2)
 
     return K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2
 
 
+# python orbbec_mag_joint_calibration.py --checker_board 6 9 --square_size 28 28 --lib_path C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --sample_path D:\data\hand_camera\1676431921
 if __name__ == '__main__':
     # calibration
-    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = joint_calibration((6, 9), (28, 28), r"C:\Users\38698\work_space\data\hand_camera\1675415054_pig_123456789_0_0_xw_white_small_stand",  r"C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs")
+    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = joint_calibration()
 
-    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter("joint_parameter")
+    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
 
     print("K1:", K1)
     print("D1:", D1)

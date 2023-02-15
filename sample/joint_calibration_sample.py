@@ -33,8 +33,8 @@ def read_orbbec_mag():
     def parse_args():
         """PARAMETERS"""
         parser = argparse.ArgumentParser()
-        parser.add_argument('orbbec_lib', type=str, help='orbbec camera sdk lib path')
-        parser.add_argument('mag_ip', type=str, help='MAG camera ip')
+        parser.add_argument('--orbbec_lib', type=str, help='orbbec camera sdk lib path')
+        parser.add_argument('--mag_ip', type=str, help='MAG camera ip')
         parser.add_argument('--save_dir', type=str, default='./', help='sampling data saved dir')
         parser.add_argument('--width_depth', type=int, default=640, help='resolutionX')
         parser.add_argument('--height_depth', type=int, default=480, help='resolutionY')
@@ -105,7 +105,6 @@ def read_orbbec_mag():
 
     n = 0
     dir_name = os.path.join(args.save_dir, str(time.time()).split('.')[0])
-    print(dir_name)
     cap = cv2.VideoCapture(0)
     ip = args.mag_ip
     device = MagDevice()
@@ -172,24 +171,25 @@ def read_orbbec_mag():
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
 
+            tt = str(time.time())
             if args.candid:
                 if cv2.waitKey(1) == ord('k'):
                     print("单张抓取")
-                    name = str(time.time())[:13]  # 必须截取时间戳，否则linux在翻阅时长文件名顺序错乱
+                    name = tt.split('.')[0] + '.' + tt.split('.')[1][:2]  # 必须截取时间戳，否则linux在翻阅时长文件名顺序错乱
                     print("\ts key detected. Saving image and distance map {}".format(name))
-                    cv2.imwrite("%s/%s_orbbec_rgb.jpg" % (dir_name, n), color_uint8)
-                    cv2.imwrite("%s/%s_orbbec_depth.jpg" % (dir_name, n), depth_uint8)
-                    pickle.dump(depth_raw, open("%s/%s_orbbec_depth.pkl" % (dir_name, n), 'wb'))
-                    cv2.imwrite("%s/%s_orbbec_rendered_rgb.jpg" % (dir_name, n), rendered_orbbec_rgb)
+                    cv2.imwrite("%s/%s_%s_orbbec_rgb.jpg" % (dir_name, name, n), color_uint8)
+                    cv2.imwrite("%s/%s_%s_orbbec_depth.jpg" % (dir_name, name, n), depth_uint8)
+                    pickle.dump(depth_raw, open("%s/%s_%s_orbbec_depth.pkl" % (dir_name, name, n), 'wb'))
+                    cv2.imwrite("%s/%s_%s_orbbec_rendered_rgb.jpg" % (dir_name, name, n), rendered_orbbec_rgb)
 
                     if ir_img is not None:
-                        ir_outdir1 = "%s/%s_MAG_ir_vis.jpg" % (dir_name, n)
-                        ir_outdir2 = "%s/%s_MAG_ir_data.jpg" % (dir_name, n)
+                        ir_outdir1 = "%s/%s_%s_MAG_ir_vis.jpg" % (dir_name, name, n)
+                        ir_outdir2 = "%s/%s_%s_MAG_ir_data.jpg" % (dir_name, name, n)
                         device.SaveDDT(ir_outdir2)
                         cv2.imwrite(ir_outdir1, ir_img)
                     if vis_img is not None:
-                        cv2.imwrite("%s/%s_MAG_rgb.jpg" % (dir_name, n), vis_img)
-                        cv2.imwrite("%s/%s_MAG_rendered_rgb.jpg" % (dir_name, n), rendered_mag_rgb)
+                        cv2.imwrite("%s/%s_%s_MAG_rgb.jpg" % (dir_name, name, n), vis_img)
+                        cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
                 if cv2.waitKey(1) == ord('q'):
                     # 关闭窗口 和 相机
                     depth_stream.stop()
@@ -218,20 +218,20 @@ def read_orbbec_mag():
                 if n % int(args.save_interval_fps) == 0:  # 每隔N帧存一次
                     # if not os.path.exists(dir_name):
                     # 	os.mkdir(dir_name)
-                    name = str(time.time())[:13]  # 必须截取时间戳，否则linux在翻阅时长文件名顺序错乱
+                    name = tt.split('.')[0] + '.' + tt.split('.')[1][:2]  # 必须截取时间戳，否则linux在翻阅时长文件名顺序错乱
                     print("\ts key detected. Saving image and distance map {}".format(name))
-                    cv2.imwrite("%s/%s_orbbec_rgb.jpg" % (dir_name, n), color_uint8)
-                    cv2.imwrite("%s/%s_orbbec_depth.jpg" % (dir_name, n), depth_uint8)
-                    pickle.dump(depth_raw, open("%s/%s_orbbec_depth.pkl" % (dir_name, n), 'wb'))
-                    cv2.imwrite("%s/%s_orbbec_rendered_rgb.jpg" % (dir_name, n), rendered_orbbec_rgb)
+                    cv2.imwrite("%s/%s_%s_orbbec_rgb.jpg" % (dir_name, name, n), color_uint8)
+                    cv2.imwrite("%s/%s_%s_orbbec_depth.jpg" % (dir_name, name, n), depth_uint8)
+                    pickle.dump(depth_raw, open("%s/%s_%s_orbbec_depth.pkl" % (dir_name, name, n), 'wb'))
+                    cv2.imwrite("%s/%s_%s_orbbec_rendered_rgb.jpg" % (dir_name, name, n), rendered_orbbec_rgb)
                     if ir_img is not None:
-                        ir_outdir1 = "%s/%s_MAG_ir_vis.jpg" % (dir_name, n)
-                        ir_outdir2 = "%s/%s_MAG_ir_data.jpg" % (dir_name, n)
+                        ir_outdir1 = "%s/%s_%s_MAG_ir_vis.jpg" % (dir_name, name, n)
+                        ir_outdir2 = "%s/%s_%s_MAG_ir_data.jpg" % (dir_name, name, n)
                         device.SaveDDT(ir_outdir2)
                         cv2.imwrite(ir_outdir1, ir_img)
                     if vis_img is not None:
-                        cv2.imwrite("%s/%s_MAG_rgb.jpg" % (dir_name, n), vis_img)
-                        cv2.imwrite("%s/%s_MAG_rendered_rgb.jpg" % (dir_name, n), rendered_mag_rgb)
+                        cv2.imwrite("%s/%s_%s_MAG_rgb.jpg" % (dir_name, name, n), vis_img)
+                        cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
         except:
             continue
 
@@ -246,6 +246,6 @@ def read_orbbec_mag():
     infrared.stop()
 
 
-# python sample/joint_calibration_sample.py C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs 10.100.24.60 --save_dir D:\data\hand_camera
+# python sample/joint_calibration_sample.py --orbbec_lib C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --mag_ip 10.100.24.60 --save_dir D:\data\hand_camera
 if __name__ == "__main__":
     read_orbbec_mag()
