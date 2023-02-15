@@ -1,10 +1,14 @@
+import os
+import sys
+PROJECT_ABSOLUTE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(PROJECT_ABSOLUTE_PATH)
 import cv2
 import numpy as np
 from orbbec_mag_coordinates_transform import orbbec_to_mag, load_joint_parameter
 from orbbec_mag_joint_calibration import find_chessboard_corners
 
 
-K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter("../joint_parameter")
+K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
 
 print("K1:", K1)
 print("D1:", D1)
@@ -17,7 +21,7 @@ print("rvec2:", rvec2)
 print("R2:", R2)
 print("T2:", T2)
 
-img_dir = r"C:\Users\38698\work_space\data\hand_camera\1675301563_pig_0_0_xw_white_small_stand\0_0_xw_white_small_stand_20_"
+img_dir = r"D:\data\hand_camera\1676431921\1676436689.74_20_"
 
 ori_orbbec_img = img_dir + "orbbec_ori_rgb.jpg"
 ori_mag_img = img_dir + "MAG_ori_rgb.jpg"
@@ -32,6 +36,6 @@ tran_points = []
 for corner in corners:
     x, y = corner.ravel()
     tran_points.append((x, y))
-mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, r"C:\Users\38698\work_space\data\hand_camera\1675135288_pig_0_0_xw_white_small_stand\0_0_xw_white_small_stand_120_orbbec_depth.pkl")
+mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, r"D:\data\hand_camera\1676431921\1676436689.74_20_orbbec_depth.pkl")
 
 print(mag_pixel_coordinates)
