@@ -55,6 +55,9 @@ def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib
                 obj_p = get_obj_points(checker_board, square_size)
                 flag = False
                 for i, coordinate in enumerate(corners_int[0]):
+                    tran_ma = np.asarray([[0.3685208472, -0.0002683465, -34.6689716117], [0.0008576698, 0.3658198394, 41.2659282306]])
+                    coordinate = np.hstack((coordinate.reshape(1, 2), 1))
+                    coordinate = coordinate.dot(tran_ma.T).astype(np.int64)
                     x_w, y_w, z_w = get_world_coordinate(depth_stream, depth_data, (coordinate[0], coordinate[1]))
                     if x_w is None:
                         flag = True

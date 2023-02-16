@@ -59,6 +59,10 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
     else:
         if isinstance(depth_data, str):
             depth_data = pickle.load(open(depth_data, 'rb'))
+        tran_ma = np.asarray(
+            [[0.3685208472, -0.0002683465, -34.6689716117], [0.0008576698, 0.3658198394, 41.2659282306]])
+        orbbec_pixel_coordinates = np.hstack((orbbec_pixel_coordinates.reshape(-1, 2), np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1)))
+        orbbec_pixel_coordinates = orbbec_pixel_coordinates.dot(tran_ma.T).astype(np.int64)
         Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
         pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1))).T
         # pixel coordinate to world coordinate
@@ -72,5 +76,5 @@ if __name__ == '__main__':
 
     depth_data = r"D:\data\hand_camera\1675417160_pig_123456789_0_0_xw_white_small_stand\123456789_0_0_xw_white_small_stand_25_orbbec_depth.pkl"
     depth_data = pickle.load(open(depth_data, 'rb'))
-    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(301, 260), (366, 405), (327, 294), (100, 100)], depth_data)
+    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(929, 383), (366, 405), (327, 294), (100, 100)], depth_data)
     print(mag_pixel_coordinate)
