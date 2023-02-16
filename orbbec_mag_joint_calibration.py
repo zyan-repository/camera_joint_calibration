@@ -1,6 +1,6 @@
 import os
 import sys
-PROJECT_ABSOLUTE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ABSOLUTE_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(PROJECT_ABSOLUTE_PATH)
 import argparse
 import glob
@@ -56,8 +56,8 @@ def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib
                 flag = False
                 for i, coordinate in enumerate(corners_int[0]):
                     tran_ma = np.asarray([[0.3685208472, -0.0002683465, -34.6689716117], [0.0008576698, 0.3658198394, 41.2659282306]])
-                    coordinate = np.hstack((coordinate.reshape(1, 2), 1))
-                    coordinate = coordinate.dot(tran_ma.T).astype(np.int64)
+                    coordinate = np.hstack((coordinate, 1)).reshape(1, 3)
+                    coordinate = np.squeeze(np.around(coordinate.dot(tran_ma.T), 0).astype(np.int64))
                     x_w, y_w, z_w = get_world_coordinate(depth_stream, depth_data, (coordinate[0], coordinate[1]))
                     if x_w is None:
                         flag = True

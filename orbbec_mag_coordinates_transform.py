@@ -1,6 +1,6 @@
 import os
 import sys
-PROJECT_ABSOLUTE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_ABSOLUTE_PATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(PROJECT_ABSOLUTE_PATH)
 import pickle
 import cv2
@@ -62,7 +62,7 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
         tran_ma = np.asarray(
             [[0.3685208472, -0.0002683465, -34.6689716117], [0.0008576698, 0.3658198394, 41.2659282306]])
         orbbec_pixel_coordinates = np.hstack((orbbec_pixel_coordinates.reshape(-1, 2), np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1)))
-        orbbec_pixel_coordinates = orbbec_pixel_coordinates.dot(tran_ma.T).astype(np.int64)
+        orbbec_pixel_coordinates = np.around(orbbec_pixel_coordinates.dot(tran_ma.T), 0).astype(np.int64)
         Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
         pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1))).T
         # pixel coordinate to world coordinate
