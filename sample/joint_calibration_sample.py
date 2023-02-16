@@ -129,7 +129,7 @@ def read_orbbec_mag():
             for corner in corners:
                 x, y = corner.ravel()
                 tran_points.append((x, y))
-                cv2.circle(rendered_orbbec_rgb, (x, y), 5, (0, 0, 255), -1)
+                cv2.circle(rendered_orbbec_rgb, (x, y), 15, (0, 0, 255), -1)
         except Exception as e:
             print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
             print(e)
@@ -147,7 +147,7 @@ def read_orbbec_mag():
                 corners = np.around(corners, 0).astype(np.int64)
                 for corner in corners:
                     x, y = corner.ravel()
-                    cv2.circle(rendered_mag_rgb, (x, y), 5, (0, 0, 255), -1)
+                    cv2.circle(rendered_mag_rgb, (x, y), 15, (0, 0, 255), -1)
             except Exception as e:
                 print("巨哥科技rgb寻找角点，绘制到巨哥科技rgb失败。")
                 print(e)
