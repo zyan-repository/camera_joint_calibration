@@ -190,6 +190,7 @@ def read_orbbec_mag():
                     if vis_img is not None:
                         cv2.imwrite("%s/%s_%s_MAG_rgb.jpg" % (dir_name, name, n), vis_img)
                         cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
+                    print("保存完成")
                 if cv2.waitKey(1) == ord('q'):
                     # 关闭窗口 和 相机
                     depth_stream.stop()
