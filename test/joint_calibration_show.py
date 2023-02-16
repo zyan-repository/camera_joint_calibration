@@ -31,6 +31,7 @@ def read_orbbec_mag():
         parser = argparse.ArgumentParser()
         parser.add_argument('--orbbec_lib', type=str, help='orbbec camera sdk lib path')
         parser.add_argument('--mag_ip', type=str, help='MAG camera ip')
+        parser.add_argument('--checker_board', nargs='+', type=int, help='checker board size')
         parser.add_argument('--width_depth', type=int, default=640, help='resolutionX')
         parser.add_argument('--height_depth', type=int, default=480, help='resolutionY')
         parser.add_argument('--fps_depth', type=int, default=30, help='frame per second')
@@ -86,6 +87,7 @@ def read_orbbec_mag():
         return np.vstack((img12, img34))
 
     args = parse_args()
+    checker_board = tuple(args.checker_board)
     device = get_orbbec(args.orbbec_lib)
     print(device.get_device_info())
     # 创建流
@@ -119,10 +121,14 @@ def read_orbbec_mag():
     while True:
         depth_raw, depth_uint8 = get_depth(depth_stream)
         ret, frame = cap.read()
+        if not ret:
+            continue
         ir_img = infrared.get_frame(0.1)
         vis_img = visible.get_frame()
         mag_pixel_coordinates = []
         print("Farthest depth: %s m" % (depth_raw.max() / 1000))
+        if depth_raw is None or frame is None or ir_img is None or vis_img is None:
+            continue
         if depth_raw.size == 0 or frame.size == 0 or ir_img.size == 0 or vis_img.size == 0:
             continue
         try:
@@ -134,12 +140,13 @@ def read_orbbec_mag():
             for corner in corners:
                 x, y = corner.ravel()
                 tran_points.append((x, y))
-                cv2.circle(frame, (x, y), 5, (0, 0, 255), -1)
+                cv2.circle(frame, (x, y), 15, (0, 0, 255), -1)
                 cv2.circle(depth_uint8, (x, y), 5, (0, 0, 255), -1)
             mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw)
         except Exception as e:
             print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
             print(e)
+        flag = True
         try:
             gray = cv2.cvtColor(vis_img, cv2.COLOR_BGR2GRAY)
             for point in mag_pixel_coordinates:
@@ -149,17 +156,23 @@ def read_orbbec_mag():
                     x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], 0)
                     cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 3, (0, 255, 0), -1)
                 except Exception as e:
+                    flag = False
                     print("通过奥比中光转换出的角点坐标，在巨哥科技rgb上绘制失败。")
                     print(e)
             try:
                 # 寻找棋盘格上的亚像素角点
                 ret, corners = find_chessboard_corners(gray, (6, 9))
                 corners = np.around(corners, 0).astype(np.int64)
-                for corner in corners:
+                sum_bias = 0
+                for idx, corner in enumerate(corners):
                     x, y = corner.ravel()
+                    if flag:
+                        sum_bias += np.sqrt((np.power(x - mag_pixel_coordinates[idx][0], 2) + np.power(y - mag_pixel_coordinates[idx][1], 2)))
                     cv2.circle(vis_img, (x, y), 10, (0, 0, 255), -1)
                     x, y, _ = device.ConvertVisCorr2IrCorr(x, 1080 - y, 0)
                     cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 2, (0, 0, 255), -1)
+                if flag:
+                    print("误差：", np.around(sum_bias / (checker_board[0] * checker_board[1]), 2))
             except Exception as e:
                 print("巨哥科技rgb寻找角点，绘制到巨哥科技rgb失败。")
                 print(e)
@@ -179,6 +192,6 @@ def read_orbbec_mag():
     infrared.stop()
 
 
-# python test/joint_calibration_show.py --orbbec_lib C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --mag_ip 10.100.24.60
+# python test/joint_calibration_show.py --orbbec_lib C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --mag_ip 10.100.24.60 --checker_board 6 9
 if __name__ == "__main__":
     read_orbbec_mag()
