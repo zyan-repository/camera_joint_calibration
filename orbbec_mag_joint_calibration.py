@@ -114,6 +114,7 @@ def joint_calibration():
     square_size = tuple(args.square_size)
     sample_path = args.sample_path
     lib_path = args.lib_path
+    tran_matrix = args.tran_matrix
     orbbec_img_dir_lst = glob.glob(os.path.join(sample_path, "*orbbec_rgb.jpg"))
     mag_img_dir_lst = glob.glob(os.path.join(sample_path, "*MAG_rgb.jpg"))
     # calibrate orbbec
@@ -130,13 +131,13 @@ def joint_calibration():
     ret, K2, D2 = cal_internal_monocular(obj_p, mag_img_list, checker_board)
 
     # joint calibrate outside
-    obj_points, corner_success = cal_world_coordinates(orbbec_img_list, checker_board, square_size, orbbec_img_dir_lst, lib_path, camera_type='orbbec', )
+    obj_points, corner_success = cal_world_coordinates(orbbec_img_list, checker_board, square_size, orbbec_img_dir_lst, lib_path, camera_type='orbbec', tran_matrix=tran_matrix)
     img = []
     for idx, img_dir in enumerate(orbbec_img_dir_lst):
         if corner_success[idx]:
             img.append(cv2.imread(img_dir))
     ret, rvec1, R1, T1 = cal_outside_image_monocular(obj_points, img, checker_board, K1, D1)
-    obj_points, corner_success = cal_world_coordinates(mag_img_list, checker_board, square_size, mag_img_dir_lst, lib_path, camera_type='mag', obj_orbbec=obj_points, corner_success=corner_success)
+    obj_points, corner_success = cal_world_coordinates(mag_img_list, checker_board, square_size, mag_img_dir_lst, lib_path, camera_type='mag', obj_orbbec=obj_points, corner_success=corner_success, tran_matrix=tran_matrix)
     img = []
     for idx, img_dir in enumerate(mag_img_dir_lst):
         if corner_success[idx]:

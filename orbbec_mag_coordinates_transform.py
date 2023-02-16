@@ -76,6 +76,6 @@ if __name__ == '__main__':
 
     depth_data = r"D:\data\hand_camera\1675417160_pig_123456789_0_0_xw_white_small_stand\123456789_0_0_xw_white_small_stand_25_orbbec_depth.pkl"
     depth_data = pickle.load(open(depth_data, 'rb'))
-    tran_matrix = np.asarray([[0.3685208472, -0.0002683465, -34.6689716117], [0.0008576698, 0.3658198394, 41.2659282306]])
+    tran_matrix = np.load(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.npy"))
     mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(929, 383), (366, 405), (327, 294), (100, 100)], depth_data, tran_matrix=tran_matrix)
     print(mag_pixel_coordinate)
