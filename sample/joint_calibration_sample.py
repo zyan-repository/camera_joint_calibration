@@ -163,12 +163,6 @@ def read_orbbec_mag():
                     print("通过奥比中光转换出的角点坐标，在巨哥科技rgb上绘制失败。")
                     print(e)
                     pass
-            vis_img_reize = cv2.resize(rendered_mag_rgb, (640, 480))
-            concat_orbbec = np.hstack((rendered_orbbec_rgb, depth_uint8))
-            concat_MAG = np.hstack((vis_img_reize, resize_ir_img))
-            # concat_MAG = np.hstack((vis_img, ir_img))
-            concat_uint8 = np.vstack((concat_orbbec, concat_MAG))
-            cv2.imshow('concat', concat_uint8)
             print("Farthest depth: %s m" % (depth_raw.max() / 1000))
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
@@ -235,6 +229,12 @@ def read_orbbec_mag():
                     if vis_img is not None:
                         cv2.imwrite("%s/%s_%s_MAG_rgb.jpg" % (dir_name, name, n), vis_img)
                         cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
+            vis_img_reize = cv2.resize(rendered_mag_rgb, (640, 480))
+            concat_orbbec = np.hstack((cv2.resize(rendered_orbbec_rgb, (640, 480)), depth_uint8))
+            concat_MAG = np.hstack((vis_img_reize, resize_ir_img))
+            # concat_MAG = np.hstack((vis_img, ir_img))
+            concat_uint8 = np.vstack((concat_orbbec, concat_MAG))
+            cv2.imshow('concat', concat_uint8)
         except:
             continue
 
