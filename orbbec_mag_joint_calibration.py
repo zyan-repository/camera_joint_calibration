@@ -28,7 +28,7 @@ def find_chessboard_corners(gray, checker_board):
     return ret, corners
 
 
-def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib_path, camera_type, obj_orbbec=None, corner_success=[]):
+def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib_path, camera_type, obj_orbbec=None, corner_success=[], tran_matrix=None):
     """
     计算内角点真实世界坐标，调用奥比中光sdk获得真实世界坐标，获得的世界坐标是基于奥比中光建立的世界坐标系
     如果深度相机没有对应sdk，应根据深度文件加外部测量人工测量世界坐标，单位一般是毫米
@@ -55,9 +55,9 @@ def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib
                 obj_p = get_obj_points(checker_board, square_size)
                 flag = False
                 for i, coordinate in enumerate(corners_int[0]):
-                    tran_ma = np.asarray([[0.3685208472, -0.0002683465, -34.6689716117], [0.0008576698, 0.3658198394, 41.2659282306]])
-                    coordinate = np.hstack((coordinate, 1)).reshape(1, 3)
-                    coordinate = np.squeeze(np.around(coordinate.dot(tran_ma.T), 0).astype(np.int64))
+                    if tran_matrix is not None:
+                        coordinate = np.hstack((coordinate, 1)).reshape(1, 3)
+                        coordinate = np.squeeze(np.around(coordinate.dot(tran_matrix.T), 0).astype(np.int64))
                     x_w, y_w, z_w = get_world_coordinate(depth_stream, depth_data, (coordinate[0], coordinate[1]))
                     if x_w is None:
                         flag = True
@@ -99,12 +99,14 @@ def joint_calibration():
                             尽量选择其中角点检测成功且清晰的数据提高标定质量（不筛选也行，但可能影响结果精度），
                             名字带rendered画出了角点，红色是检测的，绿色是根据默认参数匹配的，标定后参数会自动更新
         :param lib_path: 奥比中光openni sdk路径,路径到/sdk/libs
+        :param tran_matrix: 奥比中光rgb对齐到深度图像的变换矩阵文件路径
         """
         parser = argparse.ArgumentParser()
         parser.add_argument('--checker_board', nargs='+', type=int, help='checker board size')
         parser.add_argument('--square_size', nargs='+', type=int, help='checker board square real size')
         parser.add_argument('--lib_path', type=str, help='orbbec sdk lib path')
         parser.add_argument('--sample_path', type=str, default=os.path.join(PROJECT_ABSOLUTE_PATH, "sample"), help='sampling data saved dir')
+        parser.add_argument('--tran_matrix', type=str, default=os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.npy"), help='transform matrix saved dir')
         return parser.parse_args()
 
     args = parse_args()
@@ -128,7 +130,7 @@ def joint_calibration():
     ret, K2, D2 = cal_internal_monocular(obj_p, mag_img_list, checker_board)
 
     # joint calibrate outside
-    obj_points, corner_success = cal_world_coordinates(orbbec_img_list, checker_board, square_size, orbbec_img_dir_lst, lib_path, camera_type='orbbec')
+    obj_points, corner_success = cal_world_coordinates(orbbec_img_list, checker_board, square_size, orbbec_img_dir_lst, lib_path, camera_type='orbbec', )
     img = []
     for idx, img_dir in enumerate(orbbec_img_dir_lst):
         if corner_success[idx]:
@@ -157,7 +159,7 @@ def joint_calibration():
     return K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2
 
 
-# python orbbec_mag_joint_calibration.py --checker_board 6 9 --square_size 28 28 --lib_path C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --sample_path D:\data\hand_camera\1676431921
+# python orbbec_mag_joint_calibration.py --checker_board 6 9 --square_size 28 28 --lib_path C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --sample_path D:\data\hand_camera\1676431921 --tran_matrix C:\Users\38698\work_space\camera_joint_calibration\joint_parameter\tran_matrix.npy
 if __name__ == '__main__':
     # calibration
     K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = joint_calibration()

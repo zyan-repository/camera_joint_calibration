@@ -22,7 +22,7 @@ def load_joint_parameter(parameter_dir):
     return K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2
 
 
-def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth_data, use_sdk=False, lib_path=""):
+def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth_data, use_sdk=False, lib_path="", tran_matrix=None):
     """
     奥比中光rgb图上像素坐标对应到巨哥科技rgb图上像素坐标，奥比中光rgb分辨率640*480，巨哥科技rgb分辨率1920*1080
     :param K1: 奥比中光深度相机内参矩阵
@@ -36,6 +36,7 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
     :param depth_file: 奥比中光深度相机rgb图对应的深度pickle文件，字符串或数组
     :param use_sdk: 是否使用奥比中光sdk，偏差较大，默认为False
     :param lib_path: 奥比中光openni sdk路径,路径到/sdk/libs
+    :param tran_matrix: 奥比中光rgb对齐到深度图像的变换矩阵
     :return: 巨哥科技测温相机rgb图中对应的像素坐标
     """
     orbbec_pixel_coordinates = np.asarray(orbbec_pixel_coordinates)
@@ -59,10 +60,9 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
     else:
         if isinstance(depth_data, str):
             depth_data = pickle.load(open(depth_data, 'rb'))
-        tran_ma = np.asarray(
-            [[0.3685208472, -0.0002683465, -34.6689716117], [0.0008576698, 0.3658198394, 41.2659282306]])
-        orbbec_pixel_coordinates = np.hstack((orbbec_pixel_coordinates.reshape(-1, 2), np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1)))
-        orbbec_pixel_coordinates = np.around(orbbec_pixel_coordinates.dot(tran_ma.T), 0).astype(np.int64)
+        if tran_matrix is not None:
+            orbbec_pixel_coordinates = np.hstack((orbbec_pixel_coordinates.reshape(-1, 2), np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1)))
+            orbbec_pixel_coordinates = np.around(orbbec_pixel_coordinates.dot(tran_matrix.T), 0).astype(np.int64)
         Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
         pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1))).T
         # pixel coordinate to world coordinate
@@ -76,5 +76,6 @@ if __name__ == '__main__':
 
     depth_data = r"D:\data\hand_camera\1675417160_pig_123456789_0_0_xw_white_small_stand\123456789_0_0_xw_white_small_stand_25_orbbec_depth.pkl"
     depth_data = pickle.load(open(depth_data, 'rb'))
-    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(929, 383), (366, 405), (327, 294), (100, 100)], depth_data)
+    tran_matrix = np.asarray([[0.3685208472, -0.0002683465, -34.6689716117], [0.0008576698, 0.3658198394, 41.2659282306]])
+    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(929, 383), (366, 405), (327, 294), (100, 100)], depth_data, tran_matrix=tran_matrix)
     print(mag_pixel_coordinate)
