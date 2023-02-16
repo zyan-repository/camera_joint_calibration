@@ -118,6 +118,7 @@ def read_orbbec_mag():
     visible = Visible(device)
     visible.start(ip)
     K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
+    tran_matrix = np.load(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.npy"))
     while True:
         depth_raw, depth_uint8 = get_depth(depth_stream)
         ret, frame = cap.read()
@@ -134,15 +135,15 @@ def read_orbbec_mag():
         try:
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             # 寻找棋盘格上的亚像素角点
-            ret, corners = find_chessboard_corners(gray, (6, 9))
+            ret, corners = find_chessboard_corners(gray, checker_board)
             corners = np.around(corners, 0).astype(np.int64)
             tran_points = []
             for corner in corners:
                 x, y = corner.ravel()
                 tran_points.append((x, y))
                 cv2.circle(frame, (x, y), 15, (0, 0, 255), -1)
-                cv2.circle(depth_uint8, (x, y), 5, (0, 0, 255), -1)
-            mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw)
+                cv2.circle(depth_uint8, np.squeeze(np.around(np.hstack((np.asarray([x, y]), 1)).reshape(1, 3).dot(tran_matrix.T), 0).astype(np.int64)), 5, (0, 0, 255), -1)
+            mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw, tran_matrix=tran_matrix)
         except Exception as e:
             print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
             print(e)
@@ -161,7 +162,7 @@ def read_orbbec_mag():
                     print(e)
             try:
                 # 寻找棋盘格上的亚像素角点
-                ret, corners = find_chessboard_corners(gray, (6, 9))
+                ret, corners = find_chessboard_corners(gray, checker_board)
                 corners = np.around(corners, 0).astype(np.int64)
                 sum_bias = 0
                 for idx, corner in enumerate(corners):

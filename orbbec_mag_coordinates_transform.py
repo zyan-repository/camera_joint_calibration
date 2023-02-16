@@ -61,9 +61,11 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
         if isinstance(depth_data, str):
             depth_data = pickle.load(open(depth_data, 'rb'))
         if tran_matrix is not None:
-            orbbec_pixel_coordinates = np.hstack((orbbec_pixel_coordinates.reshape(-1, 2), np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1)))
-            orbbec_pixel_coordinates = np.around(orbbec_pixel_coordinates.dot(tran_matrix.T), 0).astype(np.int64)
-        Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
+            orbbec_depth_coordinates = np.hstack((orbbec_pixel_coordinates.reshape(-1, 2), np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1)))
+            orbbec_depth_coordinates = np.around(orbbec_depth_coordinates.dot(tran_matrix.T), 0).astype(np.int64)
+            Zc = depth_data[orbbec_depth_coordinates[:, 1], orbbec_depth_coordinates[:, 0]]
+        else:
+            Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
         pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1))).T
         # pixel coordinate to world coordinate
         obj_points = (Zc * np.linalg.inv(R1).dot(np.linalg.inv(K1).dot(pixel_matrix)) - np.linalg.inv(R1).dot(T1)).T
@@ -74,8 +76,7 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
 if __name__ == '__main__':
     K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
 
-    depth_data = r"D:\data\hand_camera\1675417160_pig_123456789_0_0_xw_white_small_stand\123456789_0_0_xw_white_small_stand_25_orbbec_depth.pkl"
+    depth_data = r"D:\data\orbbec_mag_rgb_calibration\1676534300\1676534384.22_448_orbbec_depth.pkl"
     depth_data = pickle.load(open(depth_data, 'rb'))
     tran_matrix = np.load(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.npy"))
-    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(929, 383), (366, 405), (327, 294), (100, 100)], depth_data, tran_matrix=tran_matrix)
-    print(mag_pixel_coordinate)
+    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(336, 108)], depth_data, tran_matrix=tran_matrix)

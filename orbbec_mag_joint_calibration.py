@@ -58,7 +58,7 @@ def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib
                     if tran_matrix is not None:
                         coordinate = np.hstack((coordinate, 1)).reshape(1, 3)
                         coordinate = np.squeeze(np.around(coordinate.dot(tran_matrix.T), 0).astype(np.int64))
-                    x_w, y_w, z_w = get_world_coordinate(depth_stream, depth_data, (coordinate[0], coordinate[1]))
+                    x_w, y_w, z_w = get_world_coordinate(depth_stream, depth_data, coordinate)
                     if x_w is None:
                         flag = True
                         break

@@ -36,6 +36,7 @@ def read_orbbec_mag():
         parser.add_argument('--orbbec_lib', type=str, help='orbbec camera sdk lib path')
         parser.add_argument('--mag_ip', type=str, help='MAG camera ip')
         parser.add_argument('--save_dir', type=str, default='./', help='sampling data saved dir')
+        parser.add_argument('--checker_board', nargs='+', type=int, help='checker board size')
         parser.add_argument('--width_depth', type=int, default=640, help='resolutionX')
         parser.add_argument('--height_depth', type=int, default=480, help='resolutionY')
         parser.add_argument('--fps_depth', type=int, default=30, help='frame per second')
@@ -84,6 +85,7 @@ def read_orbbec_mag():
         return dmap_int, d4d
 
     args = parse_args()
+    checker_board = tuple(args.checker_board)
     device = get_orbbec(args.orbbec_lib)
     print(device.get_device_info())
     # 创建流
@@ -123,7 +125,7 @@ def read_orbbec_mag():
         try:
             gray = cv2.cvtColor(rendered_orbbec_rgb, cv2.COLOR_BGR2GRAY)
             # 寻找棋盘格上的亚像素角点
-            ret, corners = find_chessboard_corners(gray, (6, 9))
+            ret, corners = find_chessboard_corners(gray, checker_board)
             corners = np.around(corners, 0).astype(np.int64)
             tran_points = []
             for corner in corners:
@@ -143,7 +145,7 @@ def read_orbbec_mag():
             try:
                 gray = cv2.cvtColor(rendered_mag_rgb, cv2.COLOR_BGR2GRAY)
                 # 寻找棋盘格上的亚像素角点
-                ret, corners = find_chessboard_corners(gray, (6, 9))
+                ret, corners = find_chessboard_corners(gray, checker_board)
                 corners = np.around(corners, 0).astype(np.int64)
                 for corner in corners:
                     x, y = corner.ravel()
@@ -239,6 +241,6 @@ def read_orbbec_mag():
     infrared.stop()
 
 
-# python sample/joint_calibration_sample.py --orbbec_lib C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --mag_ip 10.100.24.60 --save_dir D:\data\hand_camera
+# python sample/joint_calibration_sample.py --orbbec_lib C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --mag_ip 10.100.24.60 --save_dir D:\data\hand_camera --checker_board 6 9
 if __name__ == "__main__":
     read_orbbec_mag()
