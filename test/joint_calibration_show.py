@@ -106,6 +106,8 @@ def read_orbbec_mag():
     # infra_stream.start()    # 硬件上infra和rgb不能同时工作
 
     cap = cv2.VideoCapture(0)
+    cap.set(3, 1920)
+    cap.set(4, 1080)
     ip = args.mag_ip
     device = MagDevice()
     # camera_info = device.GetCamInfoEx()
