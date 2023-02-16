@@ -19,7 +19,7 @@ from mag_camera.MagDevice import MagDevice
 from mag_camera.live_ir import Infrared
 from mag_camera.live_vis import Visible
 from orbbec_mag_joint_calibration import find_chessboard_corners
-from orbbec_mag_coordinates_transform import orbbec_to_mag, load_joint_parameter
+from orbbec_mag_coordinates_transform import orbbec_to_mag
 
 
 def read_orbbec_mag():
@@ -115,12 +115,10 @@ def read_orbbec_mag():
     infrared.start(ip)
     visible = Visible(device)
     visible.start(ip)
-    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
     while True:
         n += 1
         depth_raw, depth_uint8 = get_depth(depth_stream)
         ret, frame = cap.read()
-        mag_pixel_coordinates = []
         rendered_orbbec_rgb = copy.deepcopy(frame)
         try:
             gray = cv2.cvtColor(rendered_orbbec_rgb, cv2.COLOR_BGR2GRAY)
@@ -132,7 +130,6 @@ def read_orbbec_mag():
                 x, y = corner.ravel()
                 tran_points.append((x, y))
                 cv2.circle(rendered_orbbec_rgb, (x, y), 5, (0, 0, 255), -1)
-            mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw)
         except Exception as e:
             print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
             print(e)
@@ -140,7 +137,6 @@ def read_orbbec_mag():
         color_uint8 = frame
         ir_img = infrared.get_frame(0.1)
         try:
-            resize_ir_img = cv2.resize(ir_img, (640, 480))
             # cv2.imshow('mag_ir', ir_img)
             vis_img = visible.get_frame()
             rendered_mag_rgb = copy.deepcopy(vis_img)
@@ -156,13 +152,6 @@ def read_orbbec_mag():
                 print("巨哥科技rgb寻找角点，绘制到巨哥科技rgb失败。")
                 print(e)
                 pass
-            for point in mag_pixel_coordinates:
-                try:
-                    cv2.circle(rendered_mag_rgb, np.around(point, 0).astype(np.int64), 5, (0, 255, 0), -1)
-                except Exception as e:
-                    print("通过奥比中光转换出的角点坐标，在巨哥科技rgb上绘制失败。")
-                    print(e)
-                    pass
             print("Farthest depth: %s m" % (depth_raw.max() / 1000))
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
@@ -229,6 +218,7 @@ def read_orbbec_mag():
                     if vis_img is not None:
                         cv2.imwrite("%s/%s_%s_MAG_rgb.jpg" % (dir_name, name, n), vis_img)
                         cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
+            resize_ir_img = cv2.resize(ir_img, (640, 480))
             vis_img_reize = cv2.resize(rendered_mag_rgb, (640, 480))
             concat_orbbec = np.hstack((cv2.resize(rendered_orbbec_rgb, (640, 480)), depth_uint8))
             concat_MAG = np.hstack((vis_img_reize, resize_ir_img))
