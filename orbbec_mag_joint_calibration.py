@@ -114,7 +114,7 @@ def joint_calibration():
     square_size = tuple(args.square_size)
     sample_path = args.sample_path
     lib_path = args.lib_path
-    tran_matrix = args.tran_matrix
+    tran_matrix = np.load(args.tran_matrix)
     orbbec_img_dir_lst = glob.glob(os.path.join(sample_path, "*orbbec_rgb.jpg"))
     mag_img_dir_lst = glob.glob(os.path.join(sample_path, "*MAG_rgb.jpg"))
     # calibrate orbbec

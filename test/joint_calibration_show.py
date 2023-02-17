@@ -141,7 +141,7 @@ def read_orbbec_mag():
             for corner in corners:
                 x, y = corner.ravel()
                 tran_points.append((x, y))
-                cv2.circle(frame, (x, y), 15, (0, 0, 255), -1)
+                cv2.circle(frame, (x, y), 5, (0, 0, 255), -1)
                 cv2.circle(depth_uint8, np.squeeze(np.around(np.hstack((np.asarray([x, y]), 1)).reshape(1, 3).dot(tran_matrix.T), 0).astype(np.int64)), 5, (0, 0, 255), -1)
             mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw, tran_matrix=tran_matrix)
         except Exception as e:
@@ -153,7 +153,7 @@ def read_orbbec_mag():
             for point in mag_pixel_coordinates:
                 try:
                     point = np.around(point, 0).astype(np.int64)
-                    cv2.circle(vis_img, point, 15, (0, 255, 0), -1)
+                    cv2.circle(vis_img, point, 5, (0, 255, 0), -1)
                     x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], 0)
                     cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 3, (0, 255, 0), -1)
                 except Exception as e:
@@ -169,7 +169,7 @@ def read_orbbec_mag():
                     x, y = corner.ravel()
                     if flag:
                         sum_bias += np.sqrt((np.power(x - mag_pixel_coordinates[idx][0], 2) + np.power(y - mag_pixel_coordinates[idx][1], 2)))
-                    cv2.circle(vis_img, (x, y), 10, (0, 0, 255), -1)
+                    cv2.circle(vis_img, (x, y), 3, (0, 0, 255), -1)
                     x, y, _ = device.ConvertVisCorr2IrCorr(x, 1080 - y, 0)
                     cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 2, (0, 0, 255), -1)
                 if flag:
