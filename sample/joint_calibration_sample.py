@@ -18,8 +18,7 @@ from openni import _openni2 as c_api
 from mag_camera.MagDevice import MagDevice
 from mag_camera.live_ir import Infrared
 from mag_camera.live_vis import Visible
-from orbbec_mag_joint_calibration import find_chessboard_corners
-from orbbec_mag_coordinates_transform import orbbec_to_mag
+from utils.calibrate import find_chessboard_corners
 
 
 def read_orbbec_mag():

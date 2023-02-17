@@ -9,16 +9,16 @@ import numpy as np
 
 
 def load_joint_parameter(parameter_dir):
-    K1 = np.load(os.path.join(parameter_dir, 'K1.npy'))
-    D1 = np.load(os.path.join(parameter_dir, 'D1.npy'))
-    rvec1 = np.load(os.path.join(parameter_dir, 'rvec1.npy'))
-    R1 = np.load(os.path.join(parameter_dir, 'R1.npy'))
-    T1 = np.load(os.path.join(parameter_dir, 'T1.npy'))
-    K2 = np.load(os.path.join(parameter_dir, 'K2.npy'))
-    D2 = np.load(os.path.join(parameter_dir, 'D2.npy'))
-    rvec2 = np.load(os.path.join(parameter_dir, 'rvec2.npy'))
-    R2 = np.load(os.path.join(parameter_dir, 'R2.npy'))
-    T2 = np.load(os.path.join(parameter_dir, 'T2.npy'))
+    K1 = np.loadtxt(os.path.join(parameter_dir, 'K1.txt'))
+    D1 = np.loadtxt(os.path.join(parameter_dir, 'D1.txt')).reshape(1, -1)
+    rvec1 = np.loadtxt(os.path.join(parameter_dir, 'rvec1.txt')).reshape(-1, 1)
+    R1 = np.loadtxt(os.path.join(parameter_dir, 'R1.txt'))
+    T1 = np.loadtxt(os.path.join(parameter_dir, 'T1.txt')).reshape(-1, 1)
+    K2 = np.loadtxt(os.path.join(parameter_dir, 'K2.txt'))
+    D2 = np.loadtxt(os.path.join(parameter_dir, 'D2.txt')).reshape(1, -1)
+    rvec2 = np.loadtxt(os.path.join(parameter_dir, 'rvec2.txt')).reshape(-1, 1)
+    R2 = np.loadtxt(os.path.join(parameter_dir, 'R2.txt'))
+    T2 = np.loadtxt(os.path.join(parameter_dir, 'T2.txt')).reshape(-1, 1)
     return K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2
 
 
@@ -70,7 +70,7 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
         # pixel coordinate to world coordinate
         obj_points = (Zc * np.linalg.inv(R1).dot(np.linalg.inv(K1).dot(pixel_matrix)) - np.linalg.inv(R1).dot(T1)).T
     image_points, _ = cv2.projectPoints(obj_points, rvec2, T2, K2, D2)
-    return np.around(image_points.squeeze(), 0).astype(np.int64)
+    return np.around(image_points.squeeze(), 0).astype(np.int64), Zc
 
 
 if __name__ == '__main__':
@@ -78,5 +78,6 @@ if __name__ == '__main__':
 
     depth_data = r"D:\data\orbbec_mag_rgb_calibration\1676534300\1676534384.22_448_orbbec_depth.pkl"
     depth_data = pickle.load(open(depth_data, 'rb'))
-    tran_matrix = np.load(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.npy"))
-    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(336, 108)], depth_data, tran_matrix=tran_matrix)
+    tran_matrix = np.loadtxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.txt"))
+    mag_pixel_coordinate, Zc = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(336, 108), (100, 100)], depth_data, tran_matrix=tran_matrix)
+    print(mag_pixel_coordinate)

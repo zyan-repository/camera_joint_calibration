@@ -30,12 +30,11 @@ def get_obj_points(checker_board: tuple, square_size: tuple):
 
 
 # 寻找亚像素焦点
-def _find_chessboard_corners(gray, checker_board, something=None):
+def find_chessboard_corners(gray, checker_board):
     """
     寻找标定板交点，在此基础上寻找亚像素焦点优化。
     :param gray: 需要求角点的灰度图
     :param checker_board: 角点的横纵数量，格式为元组
-    :param something: 不知道是干什么的参数，如果之后有用再修改
     :return: 角点寻找是否成功与像素角点， shape:[num, 2]
     """
     ret, corners = cv2.findChessboardCorners(gray, checker_board, flags=cv2.CALIB_CB_SYMMETRIC_GRID)
@@ -53,7 +52,7 @@ def find_image_points(gray, checker_board):
     获取像素坐标四个顶点的值
     :return:
     """
-    _, corners = _find_chessboard_corners(gray, checker_board)
+    _, corners = find_chessboard_corners(gray, checker_board)
     return np.array([
         corners[0].tolist()[0],
         corners[checker_board[0] - 1].tolist()[0],
@@ -85,7 +84,7 @@ def cal_internal_monocular(obj_p, img_list, checker_board):
             # 获取灰度图规格
             gray_size = gray.shape[::-1]
             # 寻找棋盘格上的亚像素角点
-            ret, corners = _find_chessboard_corners(gray, checker_board)
+            ret, corners = find_chessboard_corners(gray, checker_board)
             # 寻找成功
             if ret:
                 # 将世界坐标添加到世界坐标列表中
@@ -117,7 +116,7 @@ def cal_outside_image_monocular(obj_p, img_, checker_board, mtx, dist):
     for idx, img in enumerate(img_):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         try:
-            _, corners = _find_chessboard_corners(gray, checker_board)
+            _, corners = find_chessboard_corners(gray, checker_board)
             corner_lst.append(corners)
         except cv2.error:
             continue
@@ -208,7 +207,7 @@ def cal_internal_fisheye(obj_p, img_list, checker_board):
             # 获取灰度图规格
             gray_size = gray.shape[::-1]
             # 寻找棋盘格上的亚像素角点
-            ret, corners = _find_chessboard_corners(gray, checker_board)
+            ret, corners = find_chessboard_corners(gray, checker_board)
             # 寻找成功
             if ret:
                 # 将世界坐标添加到世界坐标列表中

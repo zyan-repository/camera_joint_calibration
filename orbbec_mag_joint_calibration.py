@@ -6,26 +6,9 @@ import argparse
 import glob
 import cv2
 import numpy as np
-from utils.calibrate import get_obj_points, cal_internal_monocular, cal_outside_image_monocular
+from utils.calibrate import get_obj_points, cal_internal_monocular, cal_outside_image_monocular, find_chessboard_corners
 from orbbec_camera.orbbec_astra_Sample import load_data, get_world_coordinate
 from orbbec_mag_coordinates_transform import load_joint_parameter
-
-
-# 寻找亚像素焦点
-def find_chessboard_corners(gray, checker_board):
-    """
-    寻找标定板交点，在此基础上寻找亚像素焦点优化。
-    :param gray: 需要求角点的灰度图
-    :param checker_board: 角点的横纵数量，格式为元组
-    :return: 角点寻找是否成功与像素角点， shape:[num, 2]
-    """
-    ret, corners = cv2.findChessboardCorners(gray, checker_board, flags=cv2.CALIB_CB_SYMMETRIC_GRID)
-    criteria = (cv2.TERM_CRITERIA_MAX_ITER + cv2.TERM_CRITERIA_EPS, 30, 0.001)
-    if ret:
-        temp_corners = cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), criteria)  # 在原角点的基础上寻找亚像素角点
-        if [temp_corners]:
-            corners = temp_corners
-    return ret, corners
 
 
 def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib_path, camera_type, obj_orbbec=None, corner_success=[], tran_matrix=None):
@@ -65,6 +48,10 @@ def cal_world_coordinates(img_list, checker_board, square_size, img_dir_lst, lib
                     obj_p[0, i, 0] = x_w
                     obj_p[0, i, 1] = y_w
                     obj_p[0, i, 2] = z_w
+                    # if (i + 1) % 6 == 0:
+                    #     for j in range(i - 5, i):
+                    #         print(np.linalg.norm(obj_p[0, j, :] - obj_p[0, j + 1, :]))
+                    # print(obj_p[0, i, :], i)
                 if flag:
                     corner_success.append(False)
                     continue
@@ -106,7 +93,7 @@ def joint_calibration():
         parser.add_argument('--square_size', nargs='+', type=int, help='checker board square real size')
         parser.add_argument('--lib_path', type=str, help='orbbec sdk lib path')
         parser.add_argument('--sample_path', type=str, default=os.path.join(PROJECT_ABSOLUTE_PATH, "sample"), help='sampling data saved dir')
-        parser.add_argument('--tran_matrix', type=str, default=os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.npy"), help='transform matrix saved dir')
+        parser.add_argument('--tran_matrix', type=str, default=os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.txt"), help='transform matrix saved dir')
         return parser.parse_args()
 
     args = parse_args()
@@ -114,7 +101,7 @@ def joint_calibration():
     square_size = tuple(args.square_size)
     sample_path = args.sample_path
     lib_path = args.lib_path
-    tran_matrix = np.load(args.tran_matrix)
+    tran_matrix = np.loadtxt(args.tran_matrix)
     orbbec_img_dir_lst = glob.glob(os.path.join(sample_path, "*orbbec_rgb.jpg"))
     mag_img_dir_lst = glob.glob(os.path.join(sample_path, "*MAG_rgb.jpg"))
     # calibrate orbbec
@@ -129,7 +116,6 @@ def joint_calibration():
     for img_dir in mag_img_dir_lst:
         mag_img_list.append(cv2.imread(img_dir))
     ret, K2, D2 = cal_internal_monocular(obj_p, mag_img_list, checker_board)
-
     # joint calibrate outside
     obj_points, corner_success = cal_world_coordinates(orbbec_img_list, checker_board, square_size, orbbec_img_dir_lst, lib_path, camera_type='orbbec', tran_matrix=tran_matrix)
     img = []
@@ -146,21 +132,20 @@ def joint_calibration():
     ret, rvec2, R2, T2 = cal_outside_image_monocular(obj_points, img, checker_board, K2, D2)
     if not os.path.exists(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter")):
         os.makedirs(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/K1.npy"), K1)
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/D1.npy"), D1)
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/rvec1.npy"), rvec1)
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/R1.npy"), R1)
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/T1.npy"), T1)
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/K2.npy"), K2)
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/D2.npy"), D2)
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/rvec2.npy"), rvec2)
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/R2.npy"), R2)
-    np.save(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/T2.npy"), T2)
-
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/K1.txt"), K1)
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/D1.txt"), D1)
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/rvec1.txt"), rvec1)
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/R1.txt"), R1)
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/T1.txt"), T1)
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/K2.txt"), K2)
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/D2.txt"), D2)
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/rvec2.txt"), rvec2)
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/R2.txt"), R2)
+    np.savetxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/T2.txt"), T2)
     return K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2
 
 
-# python orbbec_mag_joint_calibration.py --checker_board 6 9 --square_size 28 28 --lib_path C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --sample_path D:\data\hand_camera\1676431921 --tran_matrix C:\Users\38698\work_space\camera_joint_calibration\joint_parameter\tran_matrix.npy
+# python orbbec_mag_joint_calibration.py --checker_board 6 9 --square_size 28 28 --lib_path C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --sample_path D:\data\hand_camera\1676431921 --tran_matrix C:\Users\38698\work_space\camera_joint_calibration\joint_parameter\tran_matrix.txt
 if __name__ == '__main__':
     # calibration
     K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = joint_calibration()

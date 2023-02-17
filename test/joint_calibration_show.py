@@ -15,7 +15,7 @@ from openni import _openni2 as c_api
 from mag_camera.MagDevice import MagDevice
 from mag_camera.live_ir import Infrared
 from mag_camera.live_vis import Visible
-from orbbec_mag_joint_calibration import find_chessboard_corners
+from utils.calibrate import find_chessboard_corners
 from orbbec_mag_coordinates_transform import orbbec_to_mag, load_joint_parameter
 
 
@@ -39,6 +39,10 @@ def read_orbbec_mag():
         parser.add_argument('--height', type=int, default=480, help='resolutionY')
         parser.add_argument('--fps', type=int, default=30, help='frame per second')
         parser.add_argument('--mirroring', default=False)
+        parser.add_argument('--tran_matrix', type=str, default=os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.txt"), help='transform matrix saved dir')
+        parser.add_argument('--calibration_matrix', type=str, default=os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"), help='calibration matrix saved dir')
+        parser.add_argument('--single_image', type=bool, default=False, help='test single image')
+        parser.add_argument('--single_path', type=str, default="None", help='test single image dir')
         return parser.parse_args()
 
     def get_orbbec(libpath):
@@ -88,28 +92,31 @@ def read_orbbec_mag():
 
     args = parse_args()
     checker_board = tuple(args.checker_board)
-    device = get_orbbec(args.orbbec_lib)
-    print(device.get_device_info())
-    # 创建流
-    depth_stream = device.create_depth_stream()
-    infra_stream = device.create_ir_stream()
-    depth_stream.set_mirroring_enabled(args.mirroring)
-    infra_stream.set_mirroring_enabled(args.mirroring)
-    depth_stream.set_video_mode(
-        c_api.OniVideoMode(resolutionX=args.width_depth, resolutionY=args.height_depth, fps=args.fps_depth,
-                           pixelFormat=c_api.OniPixelFormat.ONI_PIXEL_FORMAT_DEPTH_1_MM)
-    )
-    # 设置 镜像 帧同步
-    device.set_image_registration_mode(True)
-    device.set_depth_color_sync_enabled(True)
-    device.set_image_registration_mode(openni2.IMAGE_REGISTRATION_DEPTH_TO_COLOR)
-    depth_stream.start()
-    # color_stream.start()
-    # infra_stream.start()    # 硬件上infra和rgb不能同时工作
+    single_image = args.single_image
+    single_path = args.single_path
+    if not single_image:
+        device = get_orbbec(args.orbbec_lib)
+        print(device.get_device_info())
+        # 创建流
+        depth_stream = device.create_depth_stream()
+        infra_stream = device.create_ir_stream()
+        depth_stream.set_mirroring_enabled(args.mirroring)
+        infra_stream.set_mirroring_enabled(args.mirroring)
+        depth_stream.set_video_mode(
+            c_api.OniVideoMode(resolutionX=args.width_depth, resolutionY=args.height_depth, fps=args.fps_depth,
+                               pixelFormat=c_api.OniPixelFormat.ONI_PIXEL_FORMAT_DEPTH_1_MM)
+        )
+        # 设置 镜像 帧同步
+        device.set_image_registration_mode(True)
+        device.set_depth_color_sync_enabled(True)
+        device.set_image_registration_mode(openni2.IMAGE_REGISTRATION_DEPTH_TO_COLOR)
+        depth_stream.start()
+        # color_stream.start()
+        # infra_stream.start()    # 硬件上infra和rgb不能同时工作
 
-    cap = cv2.VideoCapture(0)
-    cap.set(3, 1920)
-    cap.set(4, 1080)
+        cap = cv2.VideoCapture(0)
+        cap.set(3, 1920)
+        cap.set(4, 1080)
     ip = args.mag_ip
     device = MagDevice()
     # camera_info = device.GetCamInfoEx()
@@ -117,70 +124,84 @@ def read_orbbec_mag():
     infrared.start(ip)
     visible = Visible(device)
     visible.start(ip)
-    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
-    tran_matrix = np.load(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.npy"))
+    calibration_matrix = args.calibration_matrix
+    K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter(calibration_matrix)
+    tran_matrix = np.loadtxt(args.tran_matrix)
     while True:
-        depth_raw, depth_uint8 = get_depth(depth_stream)
-        ret, frame = cap.read()
-        if not ret:
-            continue
-        ir_img = infrared.get_frame(0.1)
-        vis_img = visible.get_frame()
+        if single_image:
+            import pickle
+            depth_raw = pickle.load(open(single_path + '_orbbec_depth.pkl', 'rb'))
+            depth_uint8 = cv2.imread(single_path + '_orbbec_depth.jpg')
+            frame = cv2.imread(single_path + '_orbbec_rgb.jpg')
+            ir_img = cv2.imread(single_path + '_MAG_ir_vis.jpg')
+            vis_img = cv2.imread(single_path + '_MAG_rgb.jpg')
+        else:
+            depth_raw, depth_uint8 = get_depth(depth_stream)
+            ret, frame = cap.read()
+            if not ret:
+                continue
+            ir_img = infrared.get_frame(0.1)
+            vis_img = visible.get_frame()
         mag_pixel_coordinates = []
         print("Farthest depth: %s m" % (depth_raw.max() / 1000))
         if depth_raw is None or frame is None or ir_img is None or vis_img is None:
             continue
         if depth_raw.size == 0 or frame.size == 0 or ir_img.size == 0 or vis_img.size == 0:
             continue
-        try:
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            # 寻找棋盘格上的亚像素角点
-            ret, corners = find_chessboard_corners(gray, checker_board)
+        tran_success = False
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # 寻找棋盘格上的亚像素角点
+        ret, corners = find_chessboard_corners(gray, checker_board)
+        if ret:
+            tran_success = True
             corners = np.around(corners, 0).astype(np.int64)
             tran_points = []
+            depth_points = []
             for corner in corners:
                 x, y = corner.ravel()
                 tran_points.append((x, y))
                 cv2.circle(frame, (x, y), 5, (0, 0, 255), -1)
-                cv2.circle(depth_uint8, np.squeeze(np.around(np.hstack((np.asarray([x, y]), 1)).reshape(1, 3).dot(tran_matrix.T), 0).astype(np.int64)), 5, (0, 0, 255), -1)
-            mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw, tran_matrix=tran_matrix)
-        except Exception as e:
-            print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
-            print(e)
-        flag = True
-        try:
-            gray = cv2.cvtColor(vis_img, cv2.COLOR_BGR2GRAY)
-            for point in mag_pixel_coordinates:
+                depth_point = np.squeeze(np.around(np.hstack((np.asarray([x, y]), 1)).reshape(1, 3).dot(tran_matrix.T), 0).astype(np.int64))
+                cv2.circle(depth_uint8, depth_point, 5, (0, 0, 255), -1)
+                depth_points.append(depth_point)
+            mag_pixel_coordinates, Zc = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw, tran_matrix=tran_matrix)
+        gray = cv2.cvtColor(vis_img, cv2.COLOR_BGR2GRAY)
+        flag_bias = True
+        if tran_success:
+            for idx, point in enumerate(mag_pixel_coordinates):
                 try:
                     point = np.around(point, 0).astype(np.int64)
                     cv2.circle(vis_img, point, 5, (0, 255, 0), -1)
-                    x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], 0)
+                    x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], Zc[idx])
+                    # x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], 0)
                     cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 3, (0, 255, 0), -1)
                 except Exception as e:
-                    flag = False
+                    flag_bias = False
                     print("通过奥比中光转换出的角点坐标，在巨哥科技rgb上绘制失败。")
                     print(e)
-            try:
-                # 寻找棋盘格上的亚像素角点
-                ret, corners = find_chessboard_corners(gray, checker_board)
-                corners = np.around(corners, 0).astype(np.int64)
-                sum_bias = 0
-                for idx, corner in enumerate(corners):
-                    x, y = corner.ravel()
-                    if flag:
-                        sum_bias += np.sqrt((np.power(x - mag_pixel_coordinates[idx][0], 2) + np.power(y - mag_pixel_coordinates[idx][1], 2)))
-                    cv2.circle(vis_img, (x, y), 3, (0, 0, 255), -1)
+        # 寻找棋盘格上的亚像素角点
+        ret, corners = find_chessboard_corners(gray, checker_board)
+        if ret:
+            corners = np.around(corners, 0).astype(np.int64)
+            sum_bias = 0
+            for idx, corner in enumerate(corners):
+                x, y = corner.ravel()
+                if flag_bias:
+                    sum_bias += np.linalg.norm(np.asarray([x, y]) - mag_pixel_coordinates[idx])
+                cv2.circle(vis_img, (x, y), 3, (0, 0, 255), -1)
+                if tran_success:
+                    x, y, _ = device.ConvertVisCorr2IrCorr(x, 1080 - y, depth_raw[depth_points[idx][1], depth_points[idx][0]])
+                else:
                     x, y, _ = device.ConvertVisCorr2IrCorr(x, 1080 - y, 0)
-                    cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 2, (0, 0, 255), -1)
-                if flag:
-                    print("误差：", np.around(sum_bias / (checker_board[0] * checker_board[1]), 2))
-            except Exception as e:
-                print("巨哥科技rgb寻找角点，绘制到巨哥科技rgb失败。")
-                print(e)
-        except Exception as e:
-            print(e)
+                cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 2, (0, 0, 255), -1)
+            if flag_bias:
+                print("误差：", np.around(sum_bias / (checker_board[0] * checker_board[1]), 2))
         cv2.imshow('concat', img_cat(frame, depth_uint8, vis_img, ir_img))
-        cv2.waitKey(1)
+        if single_image:
+            cv2.waitKey(0)
+            break
+        else:
+            cv2.waitKey(1)
 
     # 检测设备是否关闭（没什么用）
     try:
@@ -194,5 +215,6 @@ def read_orbbec_mag():
 
 
 # python test/joint_calibration_show.py --orbbec_lib C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --mag_ip 10.100.24.60 --checker_board 6 9
+# python test/joint_calibration_show.py --orbbec_lib C:\Users\38698\work_space\OpenNI\Win64-Release\sdk\libs --mag_ip 10.100.24.60 --checker_board 6 9 --single_image True --single_path D:\data\orbbec_mag_rgb_calibration\test\1676534894.92_4221
 if __name__ == "__main__":
     read_orbbec_mag()
