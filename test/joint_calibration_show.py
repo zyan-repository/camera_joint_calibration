@@ -186,10 +186,10 @@ def read_orbbec_mag():
             sum_bias = 0
             for idx, corner in enumerate(corners):
                 x, y = corner.ravel()
-                if flag_bias:
-                    sum_bias += np.linalg.norm(np.asarray([x, y]) - mag_pixel_coordinates[idx])
                 cv2.circle(vis_img, (x, y), 3, (0, 0, 255), -1)
                 if tran_success:
+                    if flag_bias:
+                        sum_bias += np.linalg.norm(np.asarray([x, y]) - mag_pixel_coordinates[idx])
                     x, y, _ = device.ConvertVisCorr2IrCorr(x, 1080 - y, depth_raw[depth_points[idx][1], depth_points[idx][0]])
                 else:
                     x, y, _ = device.ConvertVisCorr2IrCorr(x, 1080 - y, 0)
