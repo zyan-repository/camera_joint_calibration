@@ -67,11 +67,11 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
         else:
             Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
         pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1))).T
-        Zc = Zc * 0.75
+        Zc[:] = Zc * 0.75
         # pixel coordinate to world coordinate
         obj_points = (Zc * np.linalg.inv(R1).dot(np.linalg.inv(K1).dot(pixel_matrix)) - np.linalg.inv(R1).dot(T1)).T
     image_points, _ = cv2.projectPoints(obj_points, rvec2, T2, K2, D2)
-    return np.around(image_points.squeeze(), 0).astype(np.int64), Zc
+    return np.around(image_points.squeeze(), 0).astype(np.int64)
 
 
 if __name__ == '__main__':
@@ -80,5 +80,5 @@ if __name__ == '__main__':
     depth_data = r"D:\data\orbbec_mag_rgb_calibration\1676534300\1676534384.22_448_orbbec_depth.pkl"
     depth_data = pickle.load(open(depth_data, 'rb'))
     tran_matrix = np.loadtxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.txt"))
-    mag_pixel_coordinate, Zc = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(336, 108), (100, 100)], depth_data, tran_matrix=tran_matrix)
+    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(336, 108), (100, 100)], depth_data, tran_matrix=tran_matrix)
     print(mag_pixel_coordinate)

@@ -164,9 +164,9 @@ def read_orbbec_mag():
                 depth_point = np.squeeze(np.around(np.hstack((np.asarray([x, y]), 1)).reshape(1, 3).dot(tran_matrix.T), 0).astype(np.int64))
                 cv2.circle(depth_uint8, depth_point, 5, (0, 0, 255), -1)
                 depth_points.append(depth_point)
-            mag_pixel_coordinates, Zc = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw, tran_matrix=tran_matrix)
-            for idx, p in enumerate(depth_points):
-                print("%d号内角点，深度是%d毫米" % (idx, depth_raw[p[1], p[0]]))
+            mag_pixel_coordinates = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, tran_points, depth_raw, tran_matrix=tran_matrix)
+            # for idx, p in enumerate(depth_points):
+            #     print("%d号内角点，深度是%d毫米" % (idx, depth_raw[p[1], p[0]]))
         gray = cv2.cvtColor(vis_img, cv2.COLOR_BGR2GRAY)
         flag_bias = True
         if tran_success:
@@ -174,7 +174,7 @@ def read_orbbec_mag():
                 try:
                     point = np.around(point, 0).astype(np.int64)
                     cv2.circle(vis_img, point, 15, (0, 255, 0), -1)
-                    x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], Zc[idx] / 0.75)
+                    x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], depth_raw[depth_points[idx][1], depth_points[idx][0]])
                     # x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], 0)
                     cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 3, (0, 255, 0), -1)
                 except Exception as e:
@@ -196,7 +196,7 @@ def read_orbbec_mag():
                 else:
                     x, y, _ = device.ConvertVisCorr2IrCorr(x, 1080 - y, 0)
                 cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 2, (0, 0, 255), -1)
-            if flag_bias:
+            if flag_bias and tran_success is True:
                 print("误差：", np.around(sum_bias / (checker_board[0] * checker_board[1]), 2))
         cv2.imshow('concat', img_cat(frame, depth_uint8, vis_img, ir_img))
         if single_image:
