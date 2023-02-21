@@ -120,39 +120,39 @@ def read_orbbec_mag():
         n += 1
         depth_raw, depth_uint8 = get_depth(depth_stream)
         ret, frame = cap.read()
-        rendered_orbbec_rgb = copy.deepcopy(frame)
-        try:
-            gray = cv2.cvtColor(rendered_orbbec_rgb, cv2.COLOR_BGR2GRAY)
-            # 寻找棋盘格上的亚像素角点
-            ret, corners = find_chessboard_corners(gray, checker_board)
-            corners = np.around(corners, 0).astype(np.int64)
-            tran_points = []
-            for corner in corners:
-                x, y = corner.ravel()
-                tran_points.append((x, y))
-                cv2.circle(rendered_orbbec_rgb, (x, y), 15, (0, 0, 255), -1)
-        except Exception as e:
-            print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
-            print(e)
-            pass
+        # rendered_orbbec_rgb = copy.deepcopy(frame)
+        # try:
+        #     gray = cv2.cvtColor(rendered_orbbec_rgb, cv2.COLOR_BGR2GRAY)
+        #     # 寻找棋盘格上的亚像素角点
+        #     ret, corners = find_chessboard_corners(gray, checker_board)
+        #     corners = np.around(corners, 0).astype(np.int64)
+        #     tran_points = []
+        #     for corner in corners:
+        #         x, y = corner.ravel()
+        #         tran_points.append((x, y))
+        #         cv2.circle(rendered_orbbec_rgb, (x, y), 15, (0, 0, 255), -1)
+        # except Exception as e:
+        #     print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
+        #     print(e)
+        #     pass
         color_uint8 = frame
         ir_img = infrared.get_frame(0.1)
         try:
             # cv2.imshow('mag_ir', ir_img)
             vis_img = visible.get_frame()
-            rendered_mag_rgb = copy.deepcopy(vis_img)
-            try:
-                gray = cv2.cvtColor(rendered_mag_rgb, cv2.COLOR_BGR2GRAY)
-                # 寻找棋盘格上的亚像素角点
-                ret, corners = find_chessboard_corners(gray, checker_board)
-                corners = np.around(corners, 0).astype(np.int64)
-                for corner in corners:
-                    x, y = corner.ravel()
-                    cv2.circle(rendered_mag_rgb, (x, y), 15, (0, 0, 255), -1)
-            except Exception as e:
-                print("巨哥科技rgb寻找角点，绘制到巨哥科技rgb失败。")
-                print(e)
-                pass
+            # rendered_mag_rgb = copy.deepcopy(vis_img)
+            # try:
+            #     gray = cv2.cvtColor(rendered_mag_rgb, cv2.COLOR_BGR2GRAY)
+            #     # 寻找棋盘格上的亚像素角点
+            #     ret, corners = find_chessboard_corners(gray, checker_board)
+            #     corners = np.around(corners, 0).astype(np.int64)
+            #     for corner in corners:
+            #         x, y = corner.ravel()
+            #         cv2.circle(rendered_mag_rgb, (x, y), 15, (0, 0, 255), -1)
+            # except Exception as e:
+            #     print("巨哥科技rgb寻找角点，绘制到巨哥科技rgb失败。")
+            #     print(e)
+            #     pass
             print("Farthest depth: %s m" % (depth_raw.max() / 1000))
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
@@ -166,7 +166,7 @@ def read_orbbec_mag():
                     cv2.imwrite("%s/%s_%s_orbbec_rgb.jpg" % (dir_name, name, n), color_uint8)
                     cv2.imwrite("%s/%s_%s_orbbec_depth.jpg" % (dir_name, name, n), depth_uint8)
                     pickle.dump(depth_raw, open("%s/%s_%s_orbbec_depth.pkl" % (dir_name, name, n), 'wb'))
-                    cv2.imwrite("%s/%s_%s_orbbec_rendered_rgb.jpg" % (dir_name, name, n), rendered_orbbec_rgb)
+                    # cv2.imwrite("%s/%s_%s_orbbec_rendered_rgb.jpg" % (dir_name, name, n), rendered_orbbec_rgb)
 
                     if ir_img is not None:
                         ir_outdir1 = "%s/%s_%s_MAG_ir_vis.jpg" % (dir_name, name, n)
@@ -175,7 +175,7 @@ def read_orbbec_mag():
                         cv2.imwrite(ir_outdir1, ir_img)
                     if vis_img is not None:
                         cv2.imwrite("%s/%s_%s_MAG_rgb.jpg" % (dir_name, name, n), vis_img)
-                        cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
+                        # cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
                     print("保存完成")
                 if cv2.waitKey(1) == ord('q'):
                     # 关闭窗口 和 相机

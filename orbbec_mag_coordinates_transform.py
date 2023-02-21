@@ -67,7 +67,7 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
         else:
             Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
         pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1))).T
-        Zc[:] = Zc * 0.75
+        # Zc[:] = Zc * 0.75
         # pixel coordinate to world coordinate
         obj_points = (Zc * np.linalg.inv(R1).dot(np.linalg.inv(K1).dot(pixel_matrix)) - np.linalg.inv(R1).dot(T1)).T
     image_points, _ = cv2.projectPoints(obj_points, rvec2, T2, K2, D2)
