@@ -45,6 +45,7 @@ def read_orbbec_mag():
         parser.add_argument('--mirroring', default=False)
         parser.add_argument('--candid', type=bool, default=False, help='whether candid image or save sustaining images')
         parser.add_argument('--save_interval_fps', type=int, default=5, help='default save rate FPS')
+        parser.add_argument('--draw_corners', type=bool, default=False, help='whether draw corners')
         return parser.parse_args()
 
     def get_orbbec(libpath):
@@ -86,6 +87,7 @@ def read_orbbec_mag():
     args = parse_args()
     checker_board = tuple(args.checker_board)
     device = get_orbbec(args.orbbec_lib)
+    draw_corners = args.draw_corners
     print(device.get_device_info())
     # 创建流
     depth_stream = device.create_depth_stream()
@@ -120,39 +122,41 @@ def read_orbbec_mag():
         n += 1
         depth_raw, depth_uint8 = get_depth(depth_stream)
         ret, frame = cap.read()
-        # rendered_orbbec_rgb = copy.deepcopy(frame)
-        # try:
-        #     gray = cv2.cvtColor(rendered_orbbec_rgb, cv2.COLOR_BGR2GRAY)
-        #     # 寻找棋盘格上的亚像素角点
-        #     ret, corners = find_chessboard_corners(gray, checker_board)
-        #     corners = np.around(corners, 0).astype(np.int64)
-        #     tran_points = []
-        #     for corner in corners:
-        #         x, y = corner.ravel()
-        #         tran_points.append((x, y))
-        #         cv2.circle(rendered_orbbec_rgb, (x, y), 15, (0, 0, 255), -1)
-        # except Exception as e:
-        #     print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
-        #     print(e)
-        #     pass
+        if draw_corners:
+            rendered_orbbec_rgb = copy.deepcopy(frame)
+            try:
+                gray = cv2.cvtColor(rendered_orbbec_rgb, cv2.COLOR_BGR2GRAY)
+                # 寻找棋盘格上的亚像素角点
+                ret, corners = find_chessboard_corners(gray, checker_board)
+                corners = np.around(corners, 0).astype(np.int64)
+                tran_points = []
+                for corner in corners:
+                    x, y = corner.ravel()
+                    tran_points.append((x, y))
+                    cv2.circle(rendered_orbbec_rgb, (x, y), 15, (0, 0, 255), -1)
+            except Exception as e:
+                print("奥比中光rgb寻找角点，转换到巨哥科技rgb失败。")
+                print(e)
+                pass
         color_uint8 = frame
         ir_img = infrared.get_frame(0.1)
         try:
             # cv2.imshow('mag_ir', ir_img)
             vis_img = visible.get_frame()
-            # rendered_mag_rgb = copy.deepcopy(vis_img)
-            # try:
-            #     gray = cv2.cvtColor(rendered_mag_rgb, cv2.COLOR_BGR2GRAY)
-            #     # 寻找棋盘格上的亚像素角点
-            #     ret, corners = find_chessboard_corners(gray, checker_board)
-            #     corners = np.around(corners, 0).astype(np.int64)
-            #     for corner in corners:
-            #         x, y = corner.ravel()
-            #         cv2.circle(rendered_mag_rgb, (x, y), 15, (0, 0, 255), -1)
-            # except Exception as e:
-            #     print("巨哥科技rgb寻找角点，绘制到巨哥科技rgb失败。")
-            #     print(e)
-            #     pass
+            if draw_corners:
+                rendered_mag_rgb = copy.deepcopy(vis_img)
+                try:
+                    gray = cv2.cvtColor(rendered_mag_rgb, cv2.COLOR_BGR2GRAY)
+                    # 寻找棋盘格上的亚像素角点
+                    ret, corners = find_chessboard_corners(gray, checker_board)
+                    corners = np.around(corners, 0).astype(np.int64)
+                    for corner in corners:
+                        x, y = corner.ravel()
+                        cv2.circle(rendered_mag_rgb, (x, y), 15, (0, 0, 255), -1)
+                except Exception as e:
+                    print("巨哥科技rgb寻找角点，绘制到巨哥科技rgb失败。")
+                    print(e)
+                    pass
             print("Farthest depth: %s m" % (depth_raw.max() / 1000))
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
@@ -166,7 +170,8 @@ def read_orbbec_mag():
                     cv2.imwrite("%s/%s_%s_orbbec_rgb.jpg" % (dir_name, name, n), color_uint8)
                     cv2.imwrite("%s/%s_%s_orbbec_depth.jpg" % (dir_name, name, n), depth_uint8)
                     pickle.dump(depth_raw, open("%s/%s_%s_orbbec_depth.pkl" % (dir_name, name, n), 'wb'))
-                    # cv2.imwrite("%s/%s_%s_orbbec_rendered_rgb.jpg" % (dir_name, name, n), rendered_orbbec_rgb)
+                    if draw_corners:
+                        cv2.imwrite("%s/%s_%s_orbbec_rendered_rgb.jpg" % (dir_name, name, n), rendered_orbbec_rgb)
 
                     if ir_img is not None:
                         ir_outdir1 = "%s/%s_%s_MAG_ir_vis.jpg" % (dir_name, name, n)
@@ -175,7 +180,8 @@ def read_orbbec_mag():
                         cv2.imwrite(ir_outdir1, ir_img)
                     if vis_img is not None:
                         cv2.imwrite("%s/%s_%s_MAG_rgb.jpg" % (dir_name, name, n), vis_img)
-                        # cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
+                        if draw_corners:
+                            cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
                     print("保存完成")
                 if cv2.waitKey(1) == ord('q'):
                     # 关闭窗口 和 相机
@@ -203,14 +209,13 @@ def read_orbbec_mag():
                         print(ans)
                     break
                 if n % int(args.save_interval_fps) == 0:  # 每隔N帧存一次
-                    # if not os.path.exists(dir_name):
-                    # 	os.mkdir(dir_name)
                     name = tt.split('.')[0] + '.' + tt.split('.')[1][:2]  # 必须截取时间戳，否则linux在翻阅时长文件名顺序错乱
                     print("\ts key detected. Saving image and distance map {}".format(name))
                     cv2.imwrite("%s/%s_%s_orbbec_rgb.jpg" % (dir_name, name, n), color_uint8)
                     cv2.imwrite("%s/%s_%s_orbbec_depth.jpg" % (dir_name, name, n), depth_uint8)
                     pickle.dump(depth_raw, open("%s/%s_%s_orbbec_depth.pkl" % (dir_name, name, n), 'wb'))
-                    cv2.imwrite("%s/%s_%s_orbbec_rendered_rgb.jpg" % (dir_name, name, n), rendered_orbbec_rgb)
+                    if draw_corners:
+                        cv2.imwrite("%s/%s_%s_orbbec_rendered_rgb.jpg" % (dir_name, name, n), rendered_orbbec_rgb)
                     if ir_img is not None:
                         ir_outdir1 = "%s/%s_%s_MAG_ir_vis.jpg" % (dir_name, name, n)
                         ir_outdir2 = "%s/%s_%s_MAG_ir_data.jpg" % (dir_name, name, n)
@@ -218,10 +223,15 @@ def read_orbbec_mag():
                         cv2.imwrite(ir_outdir1, ir_img)
                     if vis_img is not None:
                         cv2.imwrite("%s/%s_%s_MAG_rgb.jpg" % (dir_name, name, n), vis_img)
-                        cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
+                        if draw_corners:
+                            cv2.imwrite("%s/%s_%s_MAG_rendered_rgb.jpg" % (dir_name, name, n), rendered_mag_rgb)
             resize_ir_img = cv2.resize(ir_img, (640, 480))
-            vis_img_reize = cv2.resize(rendered_mag_rgb, (640, 480))
-            concat_orbbec = np.hstack((cv2.resize(rendered_orbbec_rgb, (640, 480)), depth_uint8))
+            if draw_corners:
+                vis_img_reize = cv2.resize(rendered_mag_rgb, (640, 480))
+                concat_orbbec = np.hstack((cv2.resize(rendered_orbbec_rgb, (640, 480)), depth_uint8))
+            else:
+                vis_img_reize = cv2.resize(vis_img, (640, 480))
+                concat_orbbec = np.hstack((cv2.resize(frame, (640, 480)), depth_uint8))
             concat_MAG = np.hstack((vis_img_reize, resize_ir_img))
             # concat_MAG = np.hstack((vis_img, ir_img))
             concat_uint8 = np.vstack((concat_orbbec, concat_MAG))
