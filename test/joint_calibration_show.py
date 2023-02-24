@@ -173,7 +173,7 @@ def read_orbbec_mag():
             for idx, point in enumerate(mag_pixel_coordinates):
                 try:
                     point = np.around(point, 0).astype(np.int64)
-                    cv2.circle(vis_img, point, 15, (0, 255, 0), -1)
+                    cv2.circle(vis_img, point, 5, (0, 255, 0), -1)
                     x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], depth_raw[depth_points[idx][1], depth_points[idx][0]])
                     # x, y, _ = device.ConvertVisCorr2IrCorr(point[0], 1080 - point[1], 0)
                     cv2.circle(ir_img, np.asarray([x.value, 240 - y.value]).astype(np.int64), 3, (0, 255, 0), -1)
@@ -188,7 +188,7 @@ def read_orbbec_mag():
             sum_bias = 0
             for idx, corner in enumerate(corners):
                 x, y = corner.ravel()
-                cv2.circle(vis_img, (x, y), 10, (0, 0, 255), -1)
+                cv2.circle(vis_img, (x, y), 4, (0, 0, 255), -1)
                 if tran_success:
                     if flag_bias:
                         sum_bias += np.linalg.norm(np.asarray([x, y]) - mag_pixel_coordinates[idx])

@@ -22,7 +22,7 @@ def load_joint_parameter(parameter_dir):
     return K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2
 
 
-def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth_data, use_sdk=False, lib_path="", tran_matrix=None):
+def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth_data, use_sdk=False, lib_path="", tran_matrix=None, fix_matrix=None):
     """
     奥比中光rgb图上像素坐标对应到巨哥科技rgb图上像素坐标，奥比中光rgb分辨率640*480，巨哥科技rgb分辨率1920*1080
     :param K1: 奥比中光深度相机内参矩阵
@@ -67,18 +67,23 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
         else:
             Zc = depth_data[orbbec_pixel_coordinates[:, 1], orbbec_pixel_coordinates[:, 0]]
         pixel_matrix = np.hstack((orbbec_pixel_coordinates, np.ones(orbbec_pixel_coordinates.shape[0]).reshape(-1, 1))).T
-        # Zc[:] = Zc * 0.75
         # pixel coordinate to world coordinate
         obj_points = (Zc * np.linalg.inv(R1).dot(np.linalg.inv(K1).dot(pixel_matrix)) - np.linalg.inv(R1).dot(T1)).T
     image_points, _ = cv2.projectPoints(obj_points, rvec2, T2, K2, D2)
-    return np.around(image_points.squeeze(), 0).astype(np.int64)
+    image_points = image_points.squeeze(axis=1)
+    if fix_matrix is not None:
+        image_points = np.hstack((image_points, np.ones(image_points.shape[0]).reshape(-1, 1)))
+        return np.around(image_points.dot(tran_matrix.T), 0).astype(np.int64)
+    else:
+        return np.around(image_points, 0).astype(np.int64)
 
 
 if __name__ == '__main__':
     K1, D1, rvec1, R1, T1, K2, D2, rvec2, R2, T2 = load_joint_parameter(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter"))
 
-    depth_data = r"D:\data\orbbec_mag_rgb_calibration\1676534300\1676534384.22_448_orbbec_depth.pkl"
+    depth_data = r"D:\data\hand_camera\1676959393\1676959947.19_13489_orbbec_depth.pkl"
     depth_data = pickle.load(open(depth_data, 'rb'))
     tran_matrix = np.loadtxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/tran_matrix.txt"))
-    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(336, 108), (100, 100)], depth_data, tran_matrix=tran_matrix)
+    fix_matrix = np.loadtxt(os.path.join(PROJECT_ABSOLUTE_PATH, "joint_parameter/fix_matrix.txt"))
+    mag_pixel_coordinate = orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, [(1494, 477)], depth_data, tran_matrix=tran_matrix, fix_matrix=fix_matrix)
     print(mag_pixel_coordinate)
