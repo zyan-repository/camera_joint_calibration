@@ -73,7 +73,7 @@ def orbbec_to_mag(K1, R1, T1, K2, D2, rvec2, T2, orbbec_pixel_coordinates, depth
     image_points = image_points.squeeze(axis=1)
     if fix_matrix is not None:
         image_points = np.hstack((image_points, np.ones(image_points.shape[0]).reshape(-1, 1)))
-        return np.around(image_points.dot(tran_matrix.T), 0).astype(np.int64)
+        return np.around(image_points.dot(fix_matrix.T), 0).astype(np.int64)
     else:
         return np.around(image_points, 0).astype(np.int64)
 
