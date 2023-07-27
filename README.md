@@ -6,4 +6,4 @@ sample/joint_calibration_sample.py 采集脚本，可设置模式（按键k采�
 orbbec_mag_joint_calibration.py 联合标定脚本，需要奥比中光sdk，参数文件保存在 joint_parameter  
 orbbec_mag_coordinates_transform.py 转换脚本，可不用sdk，调用orbbec_to_mag，需要读取标定文件   
 test/joint_calibration_show.py 对比测试脚本，用棋盘格实时观察对齐效果  
-<p "center"> <img src='demo.png' "center"> </p>
+<img src="demo.png" style="vertical-align: middle;" alt="Image" />
